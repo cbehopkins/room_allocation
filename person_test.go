@@ -13,7 +13,10 @@ func TestPerson0(t *testing.T) {
 
 	_, bob := samplePeople.GetPersonByName("bob")
 	_, fred := samplePeople.GetPersonByName("fred")
-	bob.AddToConnection(*fred)
+	err := bob.AddToConnection(*fred)
+	if err != nil {
+		t.Error("Got an error trying to form connection")
+	}
 
 	connection, err := bob.GetConnection(*fred)
 	if err != nil {
@@ -26,6 +29,20 @@ func TestPerson0(t *testing.T) {
 	if connectionScore != 1 {
 		t.Error("The Minimum Connection Score should be 1:", connectionScore)
 	}
+
+	// The reverse connection should also have been populated
+	connection, err = fred.GetConnection(*bob)
+	if err != nil {
+		t.Error("Couldn't get fred's connection to bob")
+	}
+	if connection.Count != 1 {
+		t.Error("This connection should have a score of 1, Got:", connection)
+	}
+	connectionScore = samplePeople.MinConnectionScore()
+	if connectionScore != 1 {
+		t.Error("The Minimum Connection Score should be 1:", connectionScore)
+	}
+
 }
 
 func TestPerson1(t *testing.T) {
@@ -70,7 +87,7 @@ func TestGroupSelection(t *testing.T) {
 	// Start off with our list of people
 	samplePeople := NewPeople([]string{"bob", "fred", "Lisa"})
 	// Let's just put bob in a room
-	roomWithoutBob := samplePeople.TakeOutOfRoomByName("bob")
+	roomWithoutBob := samplePeople.NewRoomWithoutName("bob")
 	log.Println("Room without bob:", roomWithoutBob)
 	roomWithBob := People{}
 	err := roomWithBob.AddToAnotherRoomByName("bob", samplePeople)
@@ -78,5 +95,216 @@ func TestGroupSelection(t *testing.T) {
 		t.Error("got an error back:", err)
 	}
 	log.Println("With bob:", roomWithBob)
+
+}
+
+func TestSelectCandidate0(t *testing.T) {
+	samplePeople := NewPeople([]string{"bob", "fred", "Lisa"})
+
+	var bob *Person
+
+	_, bob = samplePeople.GetPersonByName("bob")
+	_, fred := samplePeople.GetPersonByName("fred")
+	_, lisa := samplePeople.GetPersonByName("Lisa")
+	bob.AddToConnection(*fred)
+	bob.AddToConnection(*lisa)
+	log.Println(bob.ListConnections())
+
+	connection_bob_fred, err := bob.GetConnection(*fred)
+	if err != nil {
+		t.Error("Couldn't get bob's connection to fred")
+	}
+	if connection_bob_fred.Count != 1 {
+		t.Error("This connection should have a score of 1, Got:", connection_bob_fred)
+	}
+
+	candidates := samplePeople.GetPeopleWithScore(*bob, 0)
+	if len(candidates) != 0 {
+		t.Error("No-one should have a score of 0, we got:", candidates)
+	}
+	candidates = samplePeople.GetPeopleWithScore(*bob, 1)
+	if len(candidates) != 2 {
+		t.Error("There should be 2 candidates, we got:", candidates)
+	}
+}
+
+func TestSelectCandidate1(t *testing.T) {
+	samplePeople := NewPeople([]string{"bob", "fred", "Lisa"})
+
+	var bob *Person
+
+	_, bob = samplePeople.GetPersonByName("bob")
+	_, fred := samplePeople.GetPersonByName("fred")
+	bob.AddToConnection(*fred)
+	log.Println(bob.ListConnections())
+
+	connection_bob_fred, err := bob.GetConnection(*fred)
+	if err != nil {
+		t.Error("Couldn't get bob's connection to fred")
+	}
+	if connection_bob_fred.Count != 1 {
+		t.Error("This connection should have a score of 1, Got:", connection_bob_fred)
+	}
+
+	candidates := samplePeople.GetPeopleWithScore(*bob, 0)
+	if len(candidates) != 1 {
+		t.Error("Lisa should have a score of 0, we got:", candidates)
+	}
+	candidates = samplePeople.GetPeopleWithScore(*bob, 1)
+	if len(candidates) != 1 {
+		t.Error("There should be 1 candidates, we got:", candidates)
+	}
+}
+
+func TestSelectGroup0(t *testing.T) {
+	samplePeople0 := NewPeople([]string{"bob", "fred", "Lisa", "Steve"})
+	samplePeople1 := samplePeople0.NewRoomWithoutNames([]string{"bob", "fred"})
+	if len(samplePeople1) != 2 {
+		t.Error("We should have extracted 2 people, instead we got:", samplePeople1)
+	}
+
+	_, bob := samplePeople0.GetPersonByName("bob")
+	_, fred := samplePeople0.GetPersonByName("fred")
+	_, lisa := samplePeople0.GetPersonByName("Lisa")
+	_, steve := samplePeople0.GetPersonByName("Steve")
+
+	bob.AddToConnection(*steve)
+
+	minScore := samplePeople0.generateMinimumsScoreboard(samplePeople1)
+	if minScore != 0 {
+		t.Error("There should be some people who aren't connected to everyone 0")
+	}
+	bob.AddToConnection(*fred)
+	bob.AddToConnection(*lisa)
+	minScore = samplePeople0.generateMinimumsScoreboard(samplePeople1)
+	if minScore != 0 {
+		t.Error("There should be some people who aren't connected to everyone 1")
+	}
+	fred.AddToConnection(*lisa)
+	fred.AddToConnection(*steve)
+	lisa.AddToConnection(*steve)
+
+	minScore = samplePeople0.generateMinimumsScoreboard(samplePeople1)
+	if minScore != 1 {
+		t.Error("Everyone should now be connected to everyone")
+	}
+}
+
+func TestSelectGroup1(t *testing.T) {
+	samplePeople0 := NewPeople([]string{"bob", "fred", "Lisa", "Steve"})
+	samplePeople1 := samplePeople0.NewRoomWithoutNames([]string{"bob", "fred"})
+	if len(samplePeople1) != 2 {
+		t.Error("We should have extracted 2 people, instead we got:", samplePeople1)
+	}
+
+	_, bob := samplePeople0.GetPersonByName("bob")
+	_, fred := samplePeople0.GetPersonByName("fred")
+	_, lisa := samplePeople0.GetPersonByName("Lisa")
+	_, steve := samplePeople0.GetPersonByName("Steve")
+
+	bob.AddToConnection(*steve)
+
+	minScore := samplePeople0.generateMinimumsScoreboard(samplePeople1)
+	if minScore != 0 {
+		t.Error("There should be some people who aren't connected to everyone 0")
+	}
+	bob.AddToConnection(*fred)
+	bob.AddToConnection(*fred)
+	bob.AddToConnection(*fred)
+	bob.AddToConnection(*lisa)
+	fred.AddToConnection(*lisa)
+	fred.AddToConnection(*lisa)
+	minScore = samplePeople0.generateMinimumsScoreboard(samplePeople1)
+	if minScore != 0 {
+		t.Error("There should be some people who aren't connected to everyone 1")
+	}
+	fred.AddToConnection(*lisa)
+	fred.AddToConnection(*steve)
+	lisa.AddToConnection(*steve)
+
+	minScore = samplePeople0.generateMinimumsScoreboard(samplePeople1)
+	if minScore != 1 {
+		t.Error("Everyone should now be connected to everyone")
+	}
+}
+
+func TestSelectGroup2(t *testing.T) {
+	samplePeople := NewPeople([]string{"bob", "fred", "Lisa", "Steve"})
+
+	samplePeople0 := samplePeople.GetPeopleByName([]string{"bob", "fred"})
+	if len(samplePeople0) != 2 {
+		t.Error("We should have extracted 2 people, instead we got:", samplePeople0)
+	}
+	samplePeople1 := samplePeople.NewRoomWithoutNames([]string{"bob", "fred"})
+	if len(samplePeople1) != 2 {
+		t.Error("We should have extracted 2 people, instead we got:", samplePeople1)
+	}
+
+	_, bob := samplePeople.GetPersonByName("bob")
+	_, fred := samplePeople.GetPersonByName("fred")
+	_, lisa := samplePeople.GetPersonByName("Lisa")
+	_, steve := samplePeople.GetPersonByName("Steve")
+
+	bob.AddToConnection(*fred)
+	bob.AddToConnection(*lisa)
+	fred.AddToConnection(*lisa)
+	fred.AddToConnection(*steve)
+	lisa.AddToConnection(*steve)
+
+	minScore := samplePeople0.generateMinimumsScoreboard(samplePeople1)
+	if minScore != 0 {
+		t.Error("There should be some people who aren't connected to everyone 0")
+	}
+
+	// Steve and Bob have not met, will the tool tell us this?
+	people2 := samplePeople0.SelectOptimumOverlap(samplePeople1)
+	if len(people2) != 1 {
+		t.Error("Damn, there's not 1 person in:", people2)
+	}
+	log.Println("We should select any of:", people2)
+
+	bob.AddToConnection(*steve)
+
+	minScore = samplePeople0.generateMinimumsScoreboard(samplePeople1)
+	if minScore != 1 {
+		t.Error("Everyone should now be connected to everyone")
+	}
+}
+
+func TestSelectGroup3(t *testing.T) {
+	samplePeople := NewPeople([]string{"bob", "fred", "Lisa", "Steve"})
+
+	samplePeople0 := samplePeople.GetPeopleByName([]string{"bob", "fred"})
+	if len(samplePeople0) != 2 {
+		t.Error("We should have extracted 2 people, instead we got:", samplePeople0)
+	}
+	samplePeople1 := samplePeople.NewRoomWithoutNames([]string{"bob", "fred"})
+	if len(samplePeople1) != 2 {
+		t.Error("We should have extracted 2 people, instead we got:", samplePeople1)
+	}
+
+	_, bob := samplePeople.GetPersonByName("bob")
+	_, fred := samplePeople.GetPersonByName("fred")
+	_, lisa := samplePeople.GetPersonByName("Lisa")
+	_, steve := samplePeople.GetPersonByName("Steve")
+
+	bob.AddToConnection(*fred)
+	bob.AddToConnection(*lisa)
+	fred.AddToConnection(*lisa)
+	fred.AddToConnection(*steve)
+	lisa.AddToConnection(*steve)
+
+	// Steve and Bob have not met, will the tool tell us this?
+	people2 := samplePeople0.SelectOptimumOverlap(samplePeople1)
+	if len(people2) != 1 {
+		t.Error("Damn, there's not 1 person in:", people2)
+	}
+
+	samplePeople0.AddPersonToMeeting(people2[0])
+	log.Println("The room should now have Steve in:", samplePeople0.ListConnections())
+	minScore := samplePeople0.generateMinimumsScoreboard(samplePeople1)
+	if minScore != 1 {
+		t.Error("Everyone should now be connected to everyone")
+	}
 
 }

@@ -27,7 +27,15 @@ func NewPeople(l []string) People {
 	}
 	return p
 }
-
+func (p People) ListConnections() string {
+	peopleStr := ""
+	spacer := ""
+	for _, r := range p {
+		peopleStr += spacer + r.ListConnections()
+		spacer = ", "
+	}
+	return "[" + peopleStr + "]"
+}
 func (p People) GetPersonByName(name string) (int, *Person) {
 	for i, m := range p {
 		if m.Name == name {
@@ -36,27 +44,45 @@ func (p People) GetPersonByName(name string) (int, *Person) {
 	}
 	return -1, nil
 }
+func (p People) GetPeopleByName(names []string) People {
+	np := make(People, 0, len(names))
+
+	for _, name := range names {
+		i, _ := p.GetPersonByName(name)
+		np = append(np, p[i])
+	}
+	return np
+}
 
 // SelectOptimumOverlap
 // Return the People who have the minimum connection score with external People
 // I.e. The people who have had the least connections
 // between the two groups
 func (p People) SelectOptimumOverlap(externalPeople People) People {
+	fmt.Println("SelectOptimumOverlap for :", p, " and :", externalPeople)
 	// For each person in the external group
 	// What's the minimum connection score with internal group
-	var externalPeopleMinScoreboard Scoreboard
-	for i, m := range p {
-		externalPeopleMinScoreboard[i] = externalPeople.GetMinScoreWith(*m)
-	}
-	minimumScore := externalPeopleMinScoreboard.MinValue()
+	minimumScore := p.generateMinimumsScoreboard(externalPeople)
+	fmt.Println("Minimum Score is:", minimumScore)
 
-	var resultScoreboard []People
+	resultScoreboard := make([]People, len(p))
 	for i, m := range p {
+		fmt.Print("Looking at:", m)
 		// Collect a list of people whi have this minimum score
 		resultScoreboard[i] = externalPeople.GetPeopleWithScore(*m, minimumScore)
+		fmt.Println("::", resultScoreboard[i])
 	}
 	return maxScResult(resultScoreboard)
 }
+
+func (p People) generateMinimumsScoreboard(externalPeople People) Score {
+	externalPeopleMinScoreboard := make(Scoreboard, len(p))
+	for i, m := range p {
+		externalPeopleMinScoreboard[i] = externalPeople.GetMinScoreWith(*m)
+	}
+	return externalPeopleMinScoreboard.MinValue()
+}
+
 func (p People) GetPeopleWithScore(q Person, s Score) People {
 	var retArray People
 	for _, m := range p {
@@ -68,6 +94,7 @@ func (p People) GetPeopleWithScore(q Person, s Score) People {
 		}
 		// And get their score to the target person
 		if connection.Count == s {
+
 			// Yep, that's a person which has that score
 			retArray = append(retArray, m)
 		}
@@ -75,7 +102,7 @@ func (p People) GetPeopleWithScore(q Person, s Score) People {
 	return retArray
 }
 
-func (p People) TakeOutOfRoomByName(name string) People {
+func (p People) NewRoomWithoutName(name string) People {
 	// Note we do not modify the origional room because we will go back to that
 	// But basically we want to select everyone who isn't name
 	// into a new slicve
@@ -86,6 +113,17 @@ func (p People) TakeOutOfRoomByName(name string) People {
 	// And reslice
 	return append(append(People{}, p[0:loc]...), p[loc+1:]...)
 }
+func (p People) NewRoomWithoutNames(names []string) People {
+	l := len(names)
+	if l == 0 {
+		return nil
+	}
+	if l == 1 {
+		return p.NewRoomWithoutName(names[0])
+	}
+	return p.NewRoomWithoutName(names[0]).NewRoomWithoutNames(names[1:])
+
+}
 
 func (p *People) AddToAnotherRoomByName(name string, r People) error {
 	// Add A person to this room, from another
@@ -95,4 +133,13 @@ func (p *People) AddToAnotherRoomByName(name string, r People) error {
 	}
 	*p = append(*p, r[i])
 	return nil
+}
+
+func (p *People) AddPersonToMeeting(r *Person) {
+	for _, m := range *p {
+		fmt.Println("Connect:", m, " to ", r)
+		// Give these people a connection number bump
+		m.AddToConnection(*r)
+	}
+	*p = append(*p, r)
 }
