@@ -22,7 +22,7 @@ func FindMinimum(valueGetter func(location int) (int, error)) int {
 	return MaxInt
 }
 
-func (p People) MinConnections() Score {
+func (p People) MinConnectionScore() Score {
 	getter := func(location int) (int, error) {
 		if location >= len(p) {
 			return MaxInt, EndListError

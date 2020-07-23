@@ -43,11 +43,21 @@ func (p Person) Is(r Person) bool {
 }
 
 // Return the connection to the specified Person
-func (p Person) GetConnection(r Person) (Connection, error) {
-	for _, m := range p.Connections {
+func (p Person) GetConnection(r Person) (*Connection, error) {
+	for i, m := range p.Connections {
 		if m.Is(r) {
-			return m, nil
+			return &p.Connections[i], nil
 		}
 	}
-	return Connection{}, PersonNotConnectedError
+	return nil, PersonNotConnectedError
+}
+
+// Return the connection to the specified Person
+func (p Person) AddToConnection(r Person) error {
+	connection, err := p.GetConnection(r)
+	if err != nil || connection == nil {
+		return err
+	}
+	connection.Count++
+	return nil
 }

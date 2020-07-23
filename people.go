@@ -1,6 +1,15 @@
 package room_allocation
 
+import "fmt"
+
+type Score int
+
+// The index into a scoreboard is the person's number
+type Scoreboard []Score
+
 type People []*Person
+
+var PersonNotFoundError = fmt.Errorf("Person Not found")
 
 func NewPeople(l []string) People {
 	p := make(People, len(l))
@@ -19,10 +28,14 @@ func NewPeople(l []string) People {
 	return p
 }
 
-type Score int
-
-// The index into a scoreboard is the person's number
-type Scoreboard []Score
+func (p People) GetPersonByName(name string) (int, *Person) {
+	for i, m := range p {
+		if m.Name == name {
+			return i, m
+		}
+	}
+	return -1, nil
+}
 
 // SelectOptimumOverlap
 // Return the People who have the minimum connection score with external People
@@ -60,4 +73,26 @@ func (p People) GetPeopleWithScore(q Person, s Score) People {
 		}
 	}
 	return retArray
+}
+
+func (p People) TakeOutOfRoomByName(name string) People {
+	// Note we do not modify the origional room because we will go back to that
+	// But basically we want to select everyone who isn't name
+	// into a new slicve
+
+	// Locate the position of this person in the string
+	loc, _ := p.GetPersonByName(name)
+
+	// And reslice
+	return append(append(People{}, p[0:loc]...), p[loc+1:]...)
+}
+
+func (p *People) AddToAnotherRoomByName(name string, r People) error {
+	// Add A person to this room, from another
+	i, _ := r.GetPersonByName(name)
+	if i < 0 {
+		return PersonNotFoundError
+	}
+	*p = append(*p, r[i])
+	return nil
 }
