@@ -13,10 +13,11 @@ func TestPerson0(t *testing.T) {
 
 	_, bob := samplePeople.GetPersonByName("bob")
 	_, fred := samplePeople.GetPersonByName("fred")
-	err := bob.AddToConnection(*fred)
+	err := bob.addToConnection(*fred)
 	if err != nil {
 		t.Error("Got an error trying to form connection")
 	}
+	err = fred.addToConnection(*bob)
 
 	connection, err := bob.GetConnection(*fred)
 	if err != nil {
@@ -28,8 +29,10 @@ func TestPerson0(t *testing.T) {
 	connectionScore := samplePeople.MinConnectionScore()
 	if connectionScore != 1 {
 		t.Error("The Minimum Connection Score should be 1:", connectionScore)
+		t.Log("Have a look:", samplePeople.ListConnections())
 	}
 
+	t.Log("Now let's check the reverse")
 	// The reverse connection should also have been populated
 	connection, err = fred.GetConnection(*bob)
 	if err != nil {
@@ -299,8 +302,9 @@ func TestSelectGroup3(t *testing.T) {
 	if len(people2) != 1 {
 		t.Error("Damn, there's not 1 person in:", people2)
 	}
-
+	t.Log("Steve's connection before adding to the meeting are:", steve.ListConnections())
 	samplePeople0.AddPersonToMeeting(people2[0])
+	t.Log("Steve's connection after adding to the meeting are:", steve.ListConnections())
 	log.Println("The room should now have Steve in:", samplePeople0.ListConnections())
 	minScore := samplePeople0.generateMinimumsScoreboard(samplePeople1)
 	if minScore != 1 {

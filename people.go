@@ -20,7 +20,7 @@ func NewPeople(l []string) People {
 		// Go to every person
 		for j := range l {
 			// And add a link to every other person
-			if j > i {
+			if j != i {
 				p[i].AddConnection(p[j])
 			}
 		}
@@ -137,7 +137,6 @@ func (p *People) AddToAnotherRoomByName(name string, r People) error {
 
 func (p *People) AddPersonToMeeting(r *Person) {
 	for _, m := range *p {
-		fmt.Println("Connect:", m, " to ", r)
 		// Give these people a connection number bump
 		m.AddToConnection(*r)
 	}

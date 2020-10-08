@@ -65,21 +65,22 @@ func (p Person) getConnection(r Person) (*Connection, error) {
 	return nil, PersonNotConnectedError
 }
 func (p Person) GetConnection(r Person) (*Connection, error) {
-	// Try the connection in the first direction
-	c, err := p.getConnection(r)
-	if err == nil {
-		return c, err
-	}
-	// Nope that failed, try the other way
 	return r.getConnection(p)
 }
 
 // And increment the value of the connection betwen two people
-func (p Person) AddToConnection(r Person) error {
-	connection, err := p.GetConnection(r)
+func (p Person) addToConnection(r Person) error {
+	connection, err := p.getConnection(r)
 	if err != nil || connection == nil {
 		return err
 	}
 	connection.Count++
 	return nil
+}
+func (p Person) AddToConnection(r Person) error {
+	err := p.addToConnection(r)
+	if err != nil {
+		return err
+	}
+	return r.addToConnection(p)
 }
