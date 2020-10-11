@@ -12,6 +12,8 @@ type People []*Person
 var PersonNotFoundError = fmt.Errorf("Person Not found")
 var NoneSuitableFoundError = fmt.Errorf("No suitable people found")
 var TooLongError = fmt.Errorf("Returned room too long")
+var NotEnoughPeopleError = fmt.Errorf("There are not enough people to split up into that many rooms")
+var NotEnoughRoomsError = fmt.Errorf("That os not enough rooms to make sense")
 
 func NewPeople(l []string) People {
 	p := make(People, len(l))
@@ -67,18 +69,15 @@ func (p People) GetPeopleByName(names []string) People {
 // I.e. The people who have had the least connections
 // between the two groups
 func (p People) SelectOptimumOverlap(externalPeople People) People {
-	fmt.Println("SelectOptimumOverlap for :", p, " and :", externalPeople)
 	// For each person in the external group
 	// What's the minimum connection score with internal group
 	minimumScore := p.generateMinimumsScoreboard(externalPeople)
-	fmt.Println("Minimum Score is:", minimumScore.MinValue())
 
 	resultScoreboard := make([]People, len(p))
 	for i, m := range p {
 		fmt.Print("Looking at:", m)
 		// Collect a list of people whi have this minimum score
 		resultScoreboard[i] = externalPeople.GetPeopleWithScore(*m, minimumScore.MinValue())
-		fmt.Println("::", resultScoreboard[i])
 	}
 	return maxScResult(resultScoreboard)
 }
@@ -220,4 +219,31 @@ func (p *People) addUpToNBestPeople(sourceRoom *People, n int) (error, int) {
 	}
 	p.AddPeopleToMeeting(overlapGroup[:n])
 	return sourceRoom.RemovePeople(overlapGroup[:n]), n
+}
+
+func (p People) SplitIntoNRooms(n int) (meetingRooms []People, err error) {
+	if len(p) < n {
+		return nil, NotEnoughPeopleError
+	}
+	if len(p) <= 2 {
+		return nil, NotEnoughPeopleError
+	}
+	if n < 2 {
+		return nil, NotEnoughRoomsError
+	}
+	meetingRooms = make([]People, n)
+	for i := 0; i < n; i++ {
+		meetingRooms[i] = People{}
+	}
+	remainingPool := p.Copy() // Is this needed?
+
+	// Now let's get into the business logic!
+	targetNumberPeoplePerRoom := len(p) / n
+	for i := 0; i < n; i++ {
+		err := meetingRooms[i].AddBestNPeople(&remainingPool, targetNumberPeoplePerRoom)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return meetingRooms, nil
 }

@@ -378,3 +378,14 @@ func TestMeeting1(t *testing.T) {
 	}
 	t.Log("We now have:", meetingRoom)
 }
+func TestMeeting2(t *testing.T) {
+	// First of all declare some people
+	samplePeople := NewPeople([]string{"bob", "fred", "Lisa", "Steve"})
+	for i := 0; i < 3; i++ {
+		mRs, err := samplePeople.SplitIntoNRooms(2)
+		if err != nil {
+			t.Error("Creating Meeting Rooms failed:", err)
+		}
+		log.Println("MRs:", mRs, "Min Connections:", samplePeople.MinConnectionScore())
+	}
+}
