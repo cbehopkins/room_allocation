@@ -1,6 +1,8 @@
 package room_allocation
 
-import "errors"
+import (
+	"errors"
+)
 
 const MaxUint = ^uint(0)
 const MinInt = 0
@@ -8,31 +10,50 @@ const MaxInt = int(MaxUint >> 1)
 
 var EndListError = errors.New("End of list reached")
 
-func FindMinimum(valueGetter func(location int) (int, error)) int {
+func FindMinimum(valueGetter func(location int) (int, error)) (int, int) {
 	minFound := MaxInt
+	minLoc := -1
 	for i := 0; i < MaxInt; i++ {
 		v, err := valueGetter(i)
 		if err != nil {
-			return minFound
+			return minFound, minLoc
 		}
 		if v <= minFound {
 			minFound = v
+			minLoc = i
 		}
 	}
-	return MaxInt
+	return minFound, minLoc
 }
-
-func (p People) MinConnectionScore() Score {
+func (p People) MinConnection() (score int, location int) {
 	getter := func(location int) (int, error) {
 		if location >= len(p) {
 			return MaxInt, EndListError
 		}
 		return int(p[location].MinConnections()), nil
 	}
-
-	return Score(FindMinimum(getter))
+	return FindMinimum(getter)
+}
+func (p People) MinConnectionScore() Score {
+	score, _ := p.MinConnection()
+	return Score(score)
 }
 
+// MinConnectionPerson
+// Within a People go through and return the person who has the lowest score
+// (to anyone)
+func (p People) MinConnectionPerson() *Person {
+	_, location := p.MinConnection()
+	return p[location]
+}
+func (p People) MinNConnections(n int) People {
+	retArray := People{}
+	for i := 0; i < n; i++ {
+		personToAdd := p.MinConnectionPerson()
+		retArray = append(retArray, personToAdd)
+	}
+	return retArray
+}
 func (p People) GetMinScoreWith(r Person) Score {
 	getter := func(location int) (int, error) {
 		if location >= len(p) {
@@ -44,7 +65,8 @@ func (p People) GetMinScoreWith(r Person) Score {
 		}
 		return int(connection.Count), nil
 	}
-	return Score(FindMinimum(getter))
+	score, _ := FindMinimum(getter)
+	return Score(score)
 }
 
 func (p Person) MinConnections() Score {
@@ -54,7 +76,8 @@ func (p Person) MinConnections() Score {
 		}
 		return int(p.Connections[location].Count), nil
 	}
-	return Score(FindMinimum(getter))
+	score, _ := FindMinimum(getter)
+	return Score(score)
 }
 func (s Scoreboard) MinValue() Score {
 	getter := func(location int) (int, error) {
@@ -63,9 +86,10 @@ func (s Scoreboard) MinValue() Score {
 		}
 		return int(s[location]), nil
 	}
-	return Score(FindMinimum(getter))
-
+	score, _ := FindMinimum(getter)
+	return Score(score)
 }
+
 func maxScResult(pa []People) People {
 	maxLenFound := len(pa[0])
 	maxEntry := MinInt

@@ -78,7 +78,10 @@ func TestPerson1(t *testing.T) {
 		t.Log(connection_bob_lisa)
 		t.Error("The Minimum Connection Score should be 0:", connectionScore)
 	}
-
+	minimumPerson := samplePeople.MinConnectionPerson()
+	if minimumPerson != lisa {
+		t.Error("We should have selected Lisa:", minimumPerson)
+	}
 	fred.AddToConnection(*lisa)
 	connectionScore = samplePeople.MinConnectionScore()
 	if connectionScore != 1 {
@@ -174,13 +177,13 @@ func TestSelectGroup0(t *testing.T) {
 	bob.AddToConnection(*steve)
 
 	minScore := samplePeople0.generateMinimumsScoreboard(samplePeople1)
-	if minScore != 0 {
+	if minScore.MinValue() != 0 {
 		t.Error("There should be some people who aren't connected to everyone 0")
 	}
 	bob.AddToConnection(*fred)
 	bob.AddToConnection(*lisa)
 	minScore = samplePeople0.generateMinimumsScoreboard(samplePeople1)
-	if minScore != 0 {
+	if minScore.MinValue() != 0 {
 		t.Error("There should be some people who aren't connected to everyone 1")
 	}
 	fred.AddToConnection(*lisa)
@@ -188,7 +191,7 @@ func TestSelectGroup0(t *testing.T) {
 	lisa.AddToConnection(*steve)
 
 	minScore = samplePeople0.generateMinimumsScoreboard(samplePeople1)
-	if minScore != 1 {
+	if minScore.MinValue() != 1 {
 		t.Error("Everyone should now be connected to everyone")
 	}
 }
@@ -208,7 +211,7 @@ func TestSelectGroup1(t *testing.T) {
 	bob.AddToConnection(*steve)
 
 	minScore := samplePeople0.generateMinimumsScoreboard(samplePeople1)
-	if minScore != 0 {
+	if minScore.MinValue() != 0 {
 		t.Error("There should be some people who aren't connected to everyone 0")
 	}
 	bob.AddToConnection(*fred)
@@ -218,7 +221,7 @@ func TestSelectGroup1(t *testing.T) {
 	fred.AddToConnection(*lisa)
 	fred.AddToConnection(*lisa)
 	minScore = samplePeople0.generateMinimumsScoreboard(samplePeople1)
-	if minScore != 0 {
+	if minScore.MinValue() != 0 {
 		t.Error("There should be some people who aren't connected to everyone 1")
 	}
 	fred.AddToConnection(*lisa)
@@ -226,7 +229,7 @@ func TestSelectGroup1(t *testing.T) {
 	lisa.AddToConnection(*steve)
 
 	minScore = samplePeople0.generateMinimumsScoreboard(samplePeople1)
-	if minScore != 1 {
+	if minScore.MinValue() != 1 {
 		t.Error("Everyone should now be connected to everyone")
 	}
 }
@@ -238,9 +241,10 @@ func TestSelectGroup2(t *testing.T) {
 	if len(samplePeople0) != 2 {
 		t.Error("We should have extracted 2 people, instead we got:", samplePeople0)
 	}
+	// Note this selects those without
 	samplePeople1 := samplePeople.NewRoomWithoutNames([]string{"bob", "fred"})
 	if len(samplePeople1) != 2 {
-		t.Error("We should have extracted 2 people, instead we got:", samplePeople1)
+		t.Error("We should have left 2 people, instead we got:", samplePeople1)
 	}
 
 	_, bob := samplePeople.GetPersonByName("bob")
@@ -255,7 +259,7 @@ func TestSelectGroup2(t *testing.T) {
 	lisa.AddToConnection(*steve)
 
 	minScore := samplePeople0.generateMinimumsScoreboard(samplePeople1)
-	if minScore != 0 {
+	if minScore.MinValue() != 0 {
 		t.Error("There should be some people who aren't connected to everyone 0")
 	}
 
@@ -269,7 +273,7 @@ func TestSelectGroup2(t *testing.T) {
 	bob.AddToConnection(*steve)
 
 	minScore = samplePeople0.generateMinimumsScoreboard(samplePeople1)
-	if minScore != 1 {
+	if minScore.MinValue() != 1 {
 		t.Error("Everyone should now be connected to everyone")
 	}
 }
@@ -307,8 +311,70 @@ func TestSelectGroup3(t *testing.T) {
 	t.Log("Steve's connection after adding to the meeting are:", steve.ListConnections())
 	log.Println("The room should now have Steve in:", samplePeople0.ListConnections())
 	minScore := samplePeople0.generateMinimumsScoreboard(samplePeople1)
-	if minScore != 1 {
+	if minScore.MinValue() != 1 {
 		t.Error("Everyone should now be connected to everyone")
 	}
+}
+func TestMinimumPeople0(t *testing.T) {
+	samplePeople := NewPeople([]string{"bob", "fred", "Lisa", "Steve"})
+	minimumPerson := samplePeople.MinConnectionPerson()
+	t.Log("We have selected:", minimumPerson)
+	_, bob := samplePeople.GetPersonByName("bob")
+	_, fred := samplePeople.GetPersonByName("fred")
+	_, lisa := samplePeople.GetPersonByName("Lisa")
+	_, steve := samplePeople.GetPersonByName("Steve")
+	bob.AddToConnection(*fred)
+	bob.AddToConnection(*lisa)
+	bob.AddToConnection(*steve)
+	fred.AddToConnection(*steve)
+	lisa.AddToConnection(*steve)
+	minimumPerson = samplePeople.MinConnectionPerson()
+	if minimumPerson != lisa {
+		t.Error("We should have selected Lisa:", minimumPerson)
+	}
+	t.Log("We selected Lisa:", minimumPerson)
 
+	// Now make sure everyone has met with everyone and it doesn't fail
+	lisa.AddToConnection(*fred)
+	minimumPerson = samplePeople.MinConnectionPerson()
+	t.Log("We selected:", minimumPerson)
+
+	bob.AddToConnection(*fred)
+	bob.AddToConnection(*lisa)
+	bob.AddToConnection(*steve)
+	fred.AddToConnection(*steve)
+	lisa.AddToConnection(*steve)
+	minimumPerson = samplePeople.MinConnectionPerson()
+	if minimumPerson != lisa {
+		t.Error("We should have selected Lisa:", minimumPerson)
+	}
+	t.Log("We selected Lisa:", minimumPerson)
+
+}
+func TestMeeting0(t *testing.T) {
+	// First of all declare some people
+	samplePeople := NewPeople([]string{"bob", "fred", "Lisa", "Steve"})
+	samplePeople0 := samplePeople.Copy()
+	// Select the a person with the lowest score
+	minimumPerson := samplePeople0.MinConnectionPerson()
+	meetingRoom := People{minimumPerson}
+	remainingPool := samplePeople.NewRoomWithoutPerson(*minimumPerson)
+
+	err := meetingRoom.AddBestNPeople(&remainingPool, 1)
+	if err != nil {
+		t.Error("Adding people failed:", err)
+	}
+	t.Log("We now have:", meetingRoom)
+
+}
+func TestMeeting1(t *testing.T) {
+	// First of all declare some people
+	samplePeople := NewPeople([]string{"bob", "fred", "Lisa", "Steve"})
+	meetingRoom := People{}
+	remainingPool := samplePeople.Copy()
+	err := meetingRoom.AddBestNPeople(&remainingPool, 2)
+	if err != nil {
+		t.Error("Adding people failed:", err)
+	}
+	t.Log("We now have:", meetingRoom)
 }

@@ -10,6 +10,8 @@ type Scoreboard []Score
 type People []*Person
 
 var PersonNotFoundError = fmt.Errorf("Person Not found")
+var NoneSuitableFoundError = fmt.Errorf("No suitable people found")
+var TooLongError = fmt.Errorf("Returned room too long")
 
 func NewPeople(l []string) People {
 	p := make(People, len(l))
@@ -25,7 +27,13 @@ func NewPeople(l []string) People {
 			}
 		}
 	}
+	fmt.Println("Created People:", p)
 	return p
+}
+func (p People) Copy() People {
+	ra := make(People, len(p))
+	copy(ra, p)
+	return ra
 }
 func (p People) ListConnections() string {
 	peopleStr := ""
@@ -63,24 +71,29 @@ func (p People) SelectOptimumOverlap(externalPeople People) People {
 	// For each person in the external group
 	// What's the minimum connection score with internal group
 	minimumScore := p.generateMinimumsScoreboard(externalPeople)
-	fmt.Println("Minimum Score is:", minimumScore)
+	fmt.Println("Minimum Score is:", minimumScore.MinValue())
 
 	resultScoreboard := make([]People, len(p))
 	for i, m := range p {
 		fmt.Print("Looking at:", m)
 		// Collect a list of people whi have this minimum score
-		resultScoreboard[i] = externalPeople.GetPeopleWithScore(*m, minimumScore)
+		resultScoreboard[i] = externalPeople.GetPeopleWithScore(*m, minimumScore.MinValue())
 		fmt.Println("::", resultScoreboard[i])
 	}
 	return maxScResult(resultScoreboard)
 }
 
-func (p People) generateMinimumsScoreboard(externalPeople People) Score {
+func (p People) generateMinimumsScoreboard(externalPeople People) Scoreboard {
 	externalPeopleMinScoreboard := make(Scoreboard, len(p))
-	for i, m := range p {
-		externalPeopleMinScoreboard[i] = externalPeople.GetMinScoreWith(*m)
+	for i, person := range p {
+		externalPeopleMinScoreboard[i] = externalPeople.GetMinScoreWith(*person)
 	}
-	return externalPeopleMinScoreboard.MinValue()
+	return externalPeopleMinScoreboard
+}
+
+// GetMinimumN
+func (p People) GetMinimum() People {
+	return p
 }
 
 func (p People) GetPeopleWithScore(q Person, s Score) People {
@@ -94,14 +107,15 @@ func (p People) GetPeopleWithScore(q Person, s Score) People {
 		}
 		// And get their score to the target person
 		if connection.Count == s {
-
-			// Yep, that's a person which has that score
 			retArray = append(retArray, m)
 		}
 	}
 	return retArray
 }
-
+func (p People) NewRoomWithoutPerson(person Person) People {
+	// TODO - this could be so more efficient
+	return p.NewRoomWithoutName(person.Name)
+}
 func (p People) NewRoomWithoutName(name string) People {
 	// Note we do not modify the origional room because we will go back to that
 	// But basically we want to select everyone who isn't name
@@ -124,6 +138,14 @@ func (p People) NewRoomWithoutNames(names []string) People {
 	return p.NewRoomWithoutName(names[0]).NewRoomWithoutNames(names[1:])
 
 }
+func (p People) FindPersonIndex(r *Person) (int, error) {
+	for i, m := range p {
+		if m == r {
+			return i, nil
+		}
+	}
+	return -1, PersonNotFoundError
+}
 
 func (p *People) AddToAnotherRoomByName(name string, r People) error {
 	// Add A person to this room, from another
@@ -141,4 +163,61 @@ func (p *People) AddPersonToMeeting(r *Person) {
 		m.AddToConnection(*r)
 	}
 	*p = append(*p, r)
+}
+func (p *People) AddPeopleToMeeting(r People) {
+	for _, s := range r {
+		p.AddPersonToMeeting(s)
+	}
+}
+func (p *People) RemovePerson(r *Person) error {
+	indexToRemove, err := p.FindPersonIndex(r)
+	if err != nil {
+		return err
+	}
+	(*p)[indexToRemove] = (*p)[len(*p)-1]
+	(*p)[len(*p)-1] = nil
+	*p = (*p)[:len(*p)-1]
+	return nil
+}
+func (p *People) RemovePeople(r People) error {
+	for _, s := range r {
+		err := p.RemovePerson(s)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func (p *People) AddBestNPeople(sourceRoom *People, n int) error {
+	targetLen := len(*p) + n
+	for len(*p) < targetLen {
+		err, numAdded := p.addUpToNBestPeople(sourceRoom, n)
+		if err != nil {
+			return err
+		}
+		n -= numAdded
+	}
+	if len(*p) > targetLen {
+		return TooLongError
+	}
+	return nil
+}
+
+func (p *People) addUpToNBestPeople(sourceRoom *People, n int) (error, int) {
+	if len(*p) == 0 {
+		minimumPerson := sourceRoom.MinConnectionPerson()
+		p.AddPersonToMeeting(minimumPerson)
+		sourceRoom.RemovePerson(minimumPerson)
+		n -= 1
+	}
+	fmt.Println("Meeting Room:", p, "Source Room:", sourceRoom)
+	overlapGroup := p.SelectOptimumOverlap(*sourceRoom)
+	if len(overlapGroup) == 0 {
+		return NoneSuitableFoundError, 0
+	}
+	if len(overlapGroup) < n {
+		n = len(overlapGroup)
+	}
+	p.AddPeopleToMeeting(overlapGroup[:n])
+	return sourceRoom.RemovePeople(overlapGroup[:n]), n
 }
