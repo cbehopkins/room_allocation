@@ -353,7 +353,7 @@ func TestMinimumPeople0(t *testing.T) {
 }
 func TestMeeting0(t *testing.T) {
 	// First of all declare some people
-	samplePeople := NewPeople([]string{"bob", "fred", "Lisa", "Steve"})
+	samplePeople := NewPeople([]string{"bob", "fred", "Lisa", "Steve", "James"})
 	samplePeople0 := samplePeople.Copy()
 	// Select the a person with the lowest score
 	minimumPerson := samplePeople0.MinConnectionPerson()
@@ -369,10 +369,10 @@ func TestMeeting0(t *testing.T) {
 }
 func TestMeeting1(t *testing.T) {
 	// First of all declare some people
-	samplePeople := NewPeople([]string{"bob", "fred", "Lisa", "Steve"})
+	samplePeople := NewPeople([]string{"bob", "fred", "Lisa", "Steve", "James"})
 	meetingRoom := People{}
 	remainingPool := samplePeople.Copy()
-	err := meetingRoom.AddBestNPeople(&remainingPool, 2)
+	err := meetingRoom.AddBestNPeople(&remainingPool, 3)
 	if err != nil {
 		t.Error("Adding people failed:", err)
 	}
@@ -380,7 +380,7 @@ func TestMeeting1(t *testing.T) {
 }
 func TestMeeting2(t *testing.T) {
 	// First of all declare some people
-	samplePeople := NewPeople([]string{"bob", "fred", "Lisa", "Steve"})
+	samplePeople := NewPeople([]string{"bob", "fred", "Lisa", "Steve", "James", "Lucy"})
 	for i := 0; i < 3; i++ {
 		mRs, err := samplePeople.SplitIntoNRooms(2)
 		if err != nil {
@@ -397,7 +397,19 @@ func TestMeeting3(t *testing.T) {
 		t.Error(t)
 	}
 
-	for _, rooms := range roomsSchedule {
-		t.Log("Rooms", rooms)
+	for i, rooms := range roomsSchedule {
+		t.Log("Session ", i, "Rooms:", rooms)
+	}
+}
+func TestMeeting4(t *testing.T) {
+	// First of all declare some people
+	samplePeople := NewPeople([]string{"bob", "fred", "Lisa", "Steve", "James", "Lucy", "Sally", "Helen"})
+	roomsSchedule, err := samplePeople.AutoMeet(2, 1)
+	if err != nil {
+		t.Error(t)
+	}
+
+	for i, rooms := range roomsSchedule {
+		t.Log("Session ", i, "Rooms:", rooms)
 	}
 }

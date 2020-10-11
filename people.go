@@ -76,7 +76,6 @@ func (p People) SelectOptimumOverlap(externalPeople People) People {
 
 	resultScoreboard := make([]People, len(p))
 	for i, m := range p {
-		fmt.Print("Looking at:", m)
 		// Collect a list of people whi have this minimum score
 		resultScoreboard[i] = externalPeople.GetPeopleWithScore(*m, minimumScore.MinValue())
 	}
@@ -191,12 +190,15 @@ func (p *People) RemovePeople(r People) error {
 func (p *People) AddBestNPeople(sourceRoom *People, n int) error {
 	targetLen := len(*p) + n
 	for len(*p) < targetLen {
+		fmt.Println("p is", p, "n", n)
 		err, numAdded := p.addUpToNBestPeople(sourceRoom, n)
 		if err != nil {
 			return err
 		}
+		fmt.Println("num Added", numAdded)
 		n -= numAdded
 	}
+	fmt.Println("p is now", p, "n", n)
 	if len(*p) > targetLen {
 		return TooLongError
 	}
@@ -204,13 +206,15 @@ func (p *People) AddBestNPeople(sourceRoom *People, n int) error {
 }
 
 func (p *People) addUpToNBestPeople(sourceRoom *People, n int) (error, int) {
+	adj := 0
 	if len(*p) == 0 {
 		minimumPerson := sourceRoom.MinConnectionPerson()
 		p.AddPersonToMeeting(minimumPerson)
 		sourceRoom.RemovePerson(minimumPerson)
 		n -= 1
+		adj = 1
+		fmt.Println("Selected minimum Person", minimumPerson)
 	}
-	fmt.Println("Meeting Room:", p, "Source Room:", sourceRoom)
 	overlapGroup := p.SelectOptimumOverlap(*sourceRoom)
 	if len(overlapGroup) == 0 {
 		return NoneSuitableFoundError, 0
@@ -218,8 +222,9 @@ func (p *People) addUpToNBestPeople(sourceRoom *People, n int) (error, int) {
 	if len(overlapGroup) < n {
 		n = len(overlapGroup)
 	}
+	fmt.Println("Before we add several, we have:", p, n, "Overlap Group:", overlapGroup)
 	p.AddPeopleToMeeting(overlapGroup[:n])
-	return sourceRoom.RemovePeople(overlapGroup[:n]), n
+	return sourceRoom.RemovePeople(overlapGroup[:n]), n + adj
 }
 
 func (p People) SplitIntoNRooms(n int) (meetingRooms []People, err error) {
@@ -236,16 +241,18 @@ func (p People) SplitIntoNRooms(n int) (meetingRooms []People, err error) {
 	for i := 0; i < n; i++ {
 		meetingRooms[i] = People{}
 	}
-	remainingPool := p.Copy() // Is this needed?
+	remainingPool := p.Copy()
 
 	// Now let's get into the business logic!
-	targetNumberPeoplePerRoom := len(p) / n
-	for i := 0; i < n; i++ {
+	targetNumberPeoplePerRoom := (len(p) + n - 1) / n
+	fmt.Println("Targetting ", targetNumberPeoplePerRoom, "from", len(p))
+	for i := 0; i < n-1; i++ {
 		err := meetingRooms[i].AddBestNPeople(&remainingPool, targetNumberPeoplePerRoom)
 		if err != nil {
 			return nil, err
 		}
 	}
+	meetingRooms[n-1] = remainingPool
 	return meetingRooms, nil
 }
 
