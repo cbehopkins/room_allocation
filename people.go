@@ -14,6 +14,7 @@ var NoneSuitableFoundError = fmt.Errorf("No suitable people found")
 var TooLongError = fmt.Errorf("Returned room too long")
 var NotEnoughPeopleError = fmt.Errorf("There are not enough people to split up into that many rooms")
 var NotEnoughRoomsError = fmt.Errorf("That os not enough rooms to make sense")
+var NotEnoughMeets = fmt.Errorf("Not enough meetings requested, need at least 1")
 
 func NewPeople(l []string) People {
 	p := make(People, len(l))
@@ -246,4 +247,21 @@ func (p People) SplitIntoNRooms(n int) (meetingRooms []People, err error) {
 		}
 	}
 	return meetingRooms, nil
+}
+
+func (p People) AutoMeet(maxNumRooms, numberOfMeets int) (meetingRoomSeq [][]People, err error) {
+	if numberOfMeets < 1 {
+		return nil, NotEnoughMeets
+	}
+	if maxNumRooms > (len(p) / 2) {
+		maxNumRooms = len(p) / 2
+	}
+	for i := 0; p.MinConnectionScore() < Score(numberOfMeets); i++ {
+		mRs, err := p.SplitIntoNRooms(2)
+		if err != nil {
+			return nil, err
+		}
+		meetingRoomSeq = append(meetingRoomSeq, mRs)
+	}
+	return
 }

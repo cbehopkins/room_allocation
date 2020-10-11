@@ -389,3 +389,15 @@ func TestMeeting2(t *testing.T) {
 		log.Println("MRs:", mRs, "Min Connections:", samplePeople.MinConnectionScore())
 	}
 }
+func TestMeeting3(t *testing.T) {
+	// First of all declare some people
+	samplePeople := NewPeople([]string{"bob", "fred", "Lisa", "Steve"})
+	roomsSchedule, err := samplePeople.AutoMeet(2, 1)
+	if err != nil {
+		t.Error(t)
+	}
+
+	for _, rooms := range roomsSchedule {
+		t.Log("Rooms", rooms)
+	}
+}
