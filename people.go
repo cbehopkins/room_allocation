@@ -10,11 +10,6 @@ type Scoreboard []Score
 type People []*Person
 
 var PersonNotFoundError = fmt.Errorf("Person Not found")
-var NoneSuitableFoundError = fmt.Errorf("No suitable people found")
-var TooLongError = fmt.Errorf("Returned room too long")
-var NotEnoughPeopleError = fmt.Errorf("There are not enough people to split up into that many rooms")
-var NotEnoughRoomsError = fmt.Errorf("That os not enough rooms to make sense")
-var NotEnoughMeets = fmt.Errorf("Not enough meetings requested, need at least 1")
 
 func NewPeople(l []string) People {
 	p := make(People, len(l))
@@ -64,72 +59,12 @@ func (p People) GetPeopleByName(names []string) People {
 	return np
 }
 
-// SelectOptimumOverlap
-// Return the People who have the minimum connection score with external People
-// I.e. The people who have had the least connections
-// between the two groups
-func (p People) SelectOptimumOverlap(externalPeople People) People {
-	fmt.Println("SelectOptimumOverlap get in::", p, " and ", externalPeople)
-	// For each person in the external group
-	// What's the minimum connection score with internal group
-	minimumScore := p.generateMinimumsScoreboard(externalPeople)
-	//	for i, person := range p {
-	//		fmt.Println("Person:", person, " has score ", minimumScore[i])
-	//	}
-	resultScoreboard := make([]People, len(p))
-	for i, m := range p {
-		// Collect a list of people who have this minimum score
-		// The scoreboard's index is cogent with the people in p
-		// And the list is the people who have that score
-		resultScoreboard[i] = externalPeople.GetPeopleWithScore(*m, minimumScore.MinValue())
-	}
-	return p.determineScoreboardOverlap(resultScoreboard, minimumScore.MinValue())
-}
-func (p People) determineScoreboardOverlap(resultScoreboard []People, minScore Score) People {
-	correlateMap := make(map[string]int)
-	lookupMap := make(map[string]*Person)
-	for i, person := range p {
-		if false {
-			fmt.Println("Person:", person, " has score ", minScore, " with ", resultScoreboard[i])
-		}
-		for _, person1 := range resultScoreboard[i] {
-			if val, ok := correlateMap[person1.Name]; ok {
-				correlateMap[person1.Name] = val + 1
-			} else {
-				correlateMap[person1.Name] = 1
-				lookupMap[person1.Name] = person1
-			}
-		}
-	}
-	return p.returnLowestPeople(correlateMap, lookupMap)
-}
-
-func (p People) returnLowestPeople(correlateMap map[string]int, lookupMap map[string]*Person) (retP People) {
-	lowestVal := 0
-	for _, val := range correlateMap {
-		if val > lowestVal {
-			lowestVal = val
-		}
-	}
-	for key, val := range correlateMap {
-		if val == lowestVal {
-			retP = append(retP, lookupMap[key])
-		}
-	}
-	return
-}
-
 func (p People) generateMinimumsScoreboard(externalPeople People) Scoreboard {
 	externalPeopleMinScoreboard := make(Scoreboard, len(p))
 	for i, person := range p {
 		externalPeopleMinScoreboard[i] = externalPeople.GetMinScoreWith(*person)
 	}
 	return externalPeopleMinScoreboard
-}
-
-// GetMinimumN
-func (p People) GetMinimum() People {
-	return p
 }
 
 func (p People) GetPeopleWithScore(q Person, s Score) (retArray People) {
@@ -228,96 +163,4 @@ func (p *People) RemovePeople(r People) error {
 		}
 	}
 	return nil
-}
-
-// AddBestNPeople
-// Add in people to this room from the source room
-// and delete them from the source room
-// Select the "best" people for this
-func (p *People) AddBestNPeople(sourceRoom *People, n int) error {
-	targetLen := len(*p) + n
-	for len(*p) < targetLen {
-		//fmt.Println("p is", p, "n", n)
-		err, numAdded := p.addUpToNBestPeople(sourceRoom, n)
-		if err != nil {
-			return err
-		}
-		//fmt.Println("Num Added", numAdded)
-		n -= numAdded
-	}
-	// fmt.Println("p is now", p, "n", n)
-	if len(*p) > targetLen {
-		return TooLongError
-	}
-	return nil
-}
-
-func (p *People) addUpToNBestPeople(sourceRoom *People, n int) (error, int) {
-	adj := 0
-	if len(*p) == 0 {
-		minimumPerson := sourceRoom.MinConnectionPerson()
-		p.AddPersonToMeeting(minimumPerson)
-		sourceRoom.RemovePerson(minimumPerson)
-		n -= 1
-		adj = 1
-		//fmt.Println("Selected minimum Person", minimumPerson)
-	}
-	overlapGroup := p.SelectOptimumOverlap(*sourceRoom)
-	if len(overlapGroup) == 0 {
-		return NoneSuitableFoundError, 0
-	}
-	if len(overlapGroup) < n {
-		n = len(overlapGroup)
-	}
-	p.AddPeopleToMeeting(overlapGroup[:n])
-	return sourceRoom.RemovePeople(overlapGroup[:n]), n + adj
-}
-
-func (p People) SplitIntoNRooms(n int) (meetingRooms []People, err error) {
-	if len(p) < n {
-		return nil, NotEnoughPeopleError
-	}
-	if len(p) <= 2 {
-		return nil, NotEnoughPeopleError
-	}
-	if n < 2 {
-		return nil, NotEnoughRoomsError
-	}
-	meetingRooms = make([]People, n)
-	for i := 0; i < n; i++ {
-		meetingRooms[i] = People{}
-	}
-	remainingPool := p.Copy()
-
-	// Now let's get into the business logic!
-	targetNumberPeoplePerRoom := (len(p) + n - 1) / n
-	//fmt.Println("Targetting ", targetNumberPeoplePerRoom, "from", len(p))
-	for i := 0; i < n-1; i++ {
-		err := meetingRooms[i].AddBestNPeople(&remainingPool, targetNumberPeoplePerRoom)
-		if err != nil {
-			return nil, err
-		}
-	}
-	// reuse remainingPool as the final meeting room
-	remainingPool.EveryoneHereHasMet()
-	meetingRooms[n-1] = remainingPool
-	return meetingRooms, nil
-}
-
-func (p People) AutoMeet(maxNumRooms, numberOfMeets int) (meetingRoomSeq [][]People, err error) {
-	if numberOfMeets < 1 {
-		return nil, NotEnoughMeets
-	}
-	if maxNumRooms > (len(p) / 2) {
-		maxNumRooms = len(p) / 2
-	}
-	for i := 0; p.MinConnectionScore() < Score(numberOfMeets); i++ {
-		mRs, err := p.SplitIntoNRooms(maxNumRooms)
-		fmt.Println("on run:", i, ":::", p.ListConnections())
-		if err != nil {
-			return nil, err
-		}
-		meetingRoomSeq = append(meetingRoomSeq, mRs)
-	}
-	return
 }
