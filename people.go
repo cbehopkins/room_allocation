@@ -101,17 +101,22 @@ func (p People) determineScoreboardOverlap(resultScoreboard []People, minScore S
 			}
 		}
 	}
-	lowestKey := ""
+	return p.returnLowestPeople(correlateMap, lookupMap)
+}
+
+func (p People) returnLowestPeople(correlateMap map[string]int, lookupMap map[string]*Person) (retP People) {
 	lowestVal := 0
-	for key, val := range correlateMap {
+	for _, val := range correlateMap {
 		if val > lowestVal {
 			lowestVal = val
-			lowestKey = key
 		}
 	}
-	// fmt.Println("From:", correlateMap, " selecting ", lowestKey)
-	per, _ := lookupMap[lowestKey] // FIXME
-	return People{per}             // TODO Refactor
+	for key, val := range correlateMap {
+		if val == lowestVal {
+			retP = append(retP, lookupMap[key])
+		}
+	}
+	return
 }
 
 func (p People) generateMinimumsScoreboard(externalPeople People) Scoreboard {
@@ -127,8 +132,7 @@ func (p People) GetMinimum() People {
 	return p
 }
 
-func (p People) GetPeopleWithScore(q Person, s Score) People {
-	var retArray People
+func (p People) GetPeopleWithScore(q Person, s Score) (retArray People) {
 	for _, m := range p {
 		// Get one person from this group of people
 		connection, err := m.GetConnection(q)
@@ -188,16 +192,13 @@ func (p *People) AddToAnotherRoomByName(name string, r People) error {
 	return nil
 }
 func (p People) EveryoneHereHasMet() {
-	fmt.Println("Add everyone in: ", p)
 	for i, m := range p {
 		if i >= 0 {
 			m.AddToConnection(*p[0])
 		}
-
 	}
 }
 func (p *People) AddPersonToMeeting(r *Person) {
-	fmt.Println("AddPersonToMeeting Adding:", r, " to ", p)
 	for _, m := range *p {
 		// Give these people a connection number bump
 		m.AddToConnection(*r)
@@ -265,12 +266,9 @@ func (p *People) addUpToNBestPeople(sourceRoom *People, n int) (error, int) {
 	if len(overlapGroup) == 0 {
 		return NoneSuitableFoundError, 0
 	}
-	//if len(overlapGroup) < n {
-	//	n = len(overlapGroup)
-	//}
-	//fmt.Println("Before we add several, we have:", p, n, "Overlap Group:", overlapGroup)
-	n = 1
-
+	if len(overlapGroup) < n {
+		n = len(overlapGroup)
+	}
 	p.AddPeopleToMeeting(overlapGroup[:n])
 	return sourceRoom.RemovePeople(overlapGroup[:n]), n + adj
 }
