@@ -403,7 +403,7 @@ func TestMeeting3(t *testing.T) {
 }
 func TestMeeting4(t *testing.T) {
 	// First of all declare some people
-	samplePeople := NewPeople([]string{"bob", "fred", "Lisa", "Steve", "James", "Lucy", "Sally", "Helen"})
+	samplePeople := NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"})
 	roomsSchedule, err := samplePeople.AutoMeet(2, 1)
 	if err != nil {
 		t.Error(t)
@@ -412,4 +412,22 @@ func TestMeeting4(t *testing.T) {
 	for i, rooms := range roomsSchedule {
 		t.Log("Session ", i, "Rooms:", rooms)
 	}
+	t.Log(samplePeople.ListConnections())
+}
+
+func TestSelectOptimumOverlap0(t *testing.T) {
+	samplePeople := NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"})
+	remainingPool := samplePeople.Copy()
+	meetingRoom := People{}
+	meetingRoom.AddBestNPeople(&remainingPool, 4)
+	t.Log("MR:", meetingRoom, "Remaining", remainingPool)
+	t.Log("*********Resetting for round 2!")
+	remainingPool = samplePeople.Copy()
+	meetingRoom = People{}
+	meetingRoom.AddBestNPeople(&remainingPool, 3)
+	t.Log("MR:", meetingRoom, "Remaining", remainingPool)
+	t.Log(samplePeople.ListConnections())
+
+	res := meetingRoom.SelectOptimumOverlap(remainingPool)
+	t.Log("Optimimum is apparently", res)
 }

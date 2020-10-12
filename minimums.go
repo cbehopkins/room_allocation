@@ -90,6 +90,10 @@ func (s Scoreboard) MinValue() Score {
 	return Score(score)
 }
 
+// maxScResult
+// Max Score Result
+// Given a list of Rooms
+// Find the  with the most number of people
 func maxScResult(pa []People) People {
 	maxLenFound := len(pa[0])
 	maxEntry := MinInt
