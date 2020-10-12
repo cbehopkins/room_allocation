@@ -303,7 +303,7 @@ func (p People) AutoMeet(maxNumRooms, numberOfMeets int) (meetingRoomSeq [][]Peo
 		maxNumRooms = len(p) / 2
 	}
 	for i := 0; p.MinConnectionScore() < Score(numberOfMeets); i++ {
-		mRs, err := p.SplitIntoNRooms(2)
+		mRs, err := p.SplitIntoNRooms(maxNumRooms)
 		if err != nil {
 			return nil, err
 		}
