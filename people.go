@@ -187,8 +187,17 @@ func (p *People) AddToAnotherRoomByName(name string, r People) error {
 	*p = append(*p, r[i])
 	return nil
 }
+func (p People) EveryoneHereHasMet() {
+	fmt.Println("Add everyone in: ", p)
+	for i, m := range p {
+		if i >= 0 {
+			m.AddToConnection(*p[0])
+		}
 
+	}
+}
 func (p *People) AddPersonToMeeting(r *Person) {
+	fmt.Println("AddPersonToMeeting Adding:", r, " to ", p)
 	for _, m := range *p {
 		// Give these people a connection number bump
 		m.AddToConnection(*r)
@@ -291,6 +300,8 @@ func (p People) SplitIntoNRooms(n int) (meetingRooms []People, err error) {
 			return nil, err
 		}
 	}
+	// reuse remainingPool as the final meeting room
+	remainingPool.EveryoneHereHasMet()
 	meetingRooms[n-1] = remainingPool
 	return meetingRooms, nil
 }
@@ -304,6 +315,7 @@ func (p People) AutoMeet(maxNumRooms, numberOfMeets int) (meetingRoomSeq [][]Peo
 	}
 	for i := 0; p.MinConnectionScore() < Score(numberOfMeets); i++ {
 		mRs, err := p.SplitIntoNRooms(maxNumRooms)
+		fmt.Println("on run:", i, ":::", p.ListConnections())
 		if err != nil {
 			return nil, err
 		}
