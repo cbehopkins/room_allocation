@@ -10,7 +10,7 @@ var NoneSuitableFoundError = fmt.Errorf("No suitable people found")
 // I.e. The people who have had the least connections
 // between the two groups
 func (p People) SelectOptimumOverlap(externalPeople People) People {
-	fmt.Println("SelectOptimumOverlap get in::", p, " and ", externalPeople)
+	// fmt.Println("SelectOptimumOverlap get in::", p, " and ", externalPeople)
 	// For each person in the external group
 	// What's the minimum connection score with internal group
 	minimumScore := p.generateMinimumsScoreboard(externalPeople)
@@ -54,6 +54,8 @@ func (p People) returnLowestPeople(correlateMap map[string]int, lookupMap map[st
 	}
 	for key, val := range correlateMap {
 		if val == lowestVal {
+			// Note the order in which people are added here will be non-deterministic
+			// Therefore the people selected will be non deterministic
 			retP = append(retP, lookupMap[key])
 		}
 	}

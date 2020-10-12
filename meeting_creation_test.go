@@ -81,16 +81,106 @@ func TestMeeting5(t *testing.T) {
 	}
 	t.Log(samplePeople.ListConnections())
 }
-func TestMeeting6(t *testing.T) {
+
+type MeetingTestData struct {
+	p                 People
+	numberRooms       int
+	targetConnections int
+	minConnections    int
+	maxConnections    int
+}
+
+func TestMeetingAutoMeet(t *testing.T) {
 	// First of all declare some people
-	samplePeople := NewPeople([]string{"a", "b", "c", "d"})
-	roomsSchedule, err := samplePeople.AutoMeet(2, 1)
+	testData := []MeetingTestData{
+		MeetingTestData{NewPeople([]string{"a", "b", "c", "d"}), 2, 1, 1, 2},
+		MeetingTestData{NewPeople([]string{"a", "b", "c", "d"}), 2, 2, 2, 3},
+		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"}), 2, 1, 1, 5},
+		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"}), 3, 1, 1, 4},
+		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"}), 3, 2, 2, 5},
+		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"}), 4, 1, 1, 2},
+		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h",
+			"i", "j", "k", "l", "m", "n", "p", "q"}), 3, 1, 1, 9},
+		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h",
+			"i", "j", "k", "l", "m", "n", "p", "q"}), 4, 1, 1, 5},
+	}
+	for i, td := range testData {
+		tMeetingAutoMeet(td, i, t)
+	}
+}
+
+func tMeetingAutoMeet(td MeetingTestData, cnt int, t *testing.T) {
+	samplePeople := td.p
+	numberRooms := td.numberRooms
+	targetConnections := td.targetConnections
+	minConnections := Score(td.minConnections)
+	maxConnections := Score(td.maxConnections)
+	roomsSchedule, err := samplePeople.AutoMeet(numberRooms, targetConnections)
 	if err != nil {
-		t.Error(t)
+		t.Error(cnt, err)
 	}
 
 	for i, rooms := range roomsSchedule {
 		t.Log("Session ", i, "Rooms:", rooms)
 	}
 	t.Log(samplePeople.ListConnections())
+	for _, person0 := range samplePeople {
+		for _, connection := range person0.Connections {
+			if connection.Count < minConnections {
+				t.Error(cnt, "We should have minimum", minConnections, " connection between ", person0, "and ", connection.PerLink, " have:", connection.Count)
+			}
+			if connection.Count > maxConnections {
+				t.Error(cnt, "We should have maximum", maxConnections, " connection between ", person0, "and ", connection.PerLink, " have:", connection.Count)
+			}
+		}
+	}
+}
+
+func TestMeetingOptimal(t *testing.T) {
+	// First of all declare some people
+	testData := []MeetingTestData{
+		MeetingTestData{NewPeople([]string{"a", "b", "c", "d"}), 2, 1, 1, 2},
+		MeetingTestData{NewPeople([]string{"a", "b", "c", "d"}), 2, 2, 2, 2},
+		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"}), 2, 1, 1, 3},
+		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"}), 3, 1, 1, 3},
+		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"}), 3, 2, 2, 5},
+		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"}), 4, 1, 1, 3},
+		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h",
+			"i", "j", "k", "l", "m", "n", "p", "q"}), 3, 1, 1, 8},
+		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h",
+			"i", "j", "k", "l", "m", "n", "p", "q"}), 4, 1, 1, 6},
+	}
+	for i, td := range testData {
+		tMeetingOptimal(td, i, t)
+	}
+}
+
+func tMeetingOptimal(td MeetingTestData, cnt int, t *testing.T) {
+	samplePeople := td.p
+	numberRooms := td.numberRooms
+	targetConnections := td.targetConnections
+	minConnections := Score(td.minConnections)
+	maxConnections := Score(td.maxConnections)
+	roomsSchedule, err := samplePeople.OptimalMeet(numberRooms, targetConnections, 20)
+	if err != nil {
+		t.Error(cnt, err)
+	}
+	if roomsSchedule == nil {
+		t.Error("No room schedule retrurned")
+	}
+	t.Log("Results for tsetcase:", cnt)
+	for i, rooms := range roomsSchedule {
+		t.Log("Session ", i, "Rooms:", rooms)
+	}
+	t.Log(samplePeople.ListConnections())
+	for _, person0 := range samplePeople {
+		for _, connection := range person0.Connections {
+			if connection.Count < minConnections {
+				t.Error(cnt, "We should have minimum", minConnections, " connection between ", person0, "and ", connection.PerLink, " have:", connection.Count)
+			}
+			if connection.Count > maxConnections {
+				t.Error(cnt, "We should have maximum", maxConnections, " connection between ", person0, "and ", connection.PerLink, " have:", connection.Count)
+			}
+		}
+	}
 }

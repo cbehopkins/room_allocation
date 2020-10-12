@@ -53,3 +53,23 @@ func (p People) AutoMeet(maxNumRooms, numberOfMeets int) (meetingRoomSeq [][]Peo
 	}
 	return
 }
+func (p People) OptimalMeet(maxNumRooms, numberOfMeets, itterations int) ([][]People, error) {
+	minLengthFound := MaxInt
+	var meetingRoomSeq [][]People
+	for i := 0; i < itterations; i++ {
+		pc := p.Copy()
+		meetingRoomSeqTemp, err := pc.AutoMeet(maxNumRooms, numberOfMeets)
+		if err != nil {
+			return nil, err
+		}
+		if len(meetingRoomSeqTemp) == 0 {
+			continue
+		}
+		if len(meetingRoomSeqTemp) < minLengthFound {
+			minLengthFound = len(meetingRoomSeqTemp)
+			meetingRoomSeq = meetingRoomSeqTemp
+		}
+
+	}
+	return meetingRoomSeq, nil
+}
