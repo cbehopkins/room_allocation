@@ -27,17 +27,36 @@ func NewPeople(l []string) People {
 	}
 	return p
 }
+func (p People) Names() []string {
+	retStr := make([]string, len(p))
+	for i, q := range p {
+		retStr[i] = q.Name
+	}
+	return retStr
+}
 func (p People) Copy() People {
 	ra := make(People, len(p))
 	copy(ra, p)
 	return ra
 }
+func (p People) CopyBlank() People {
+	return NewPeople(p.Names())
+}
+func (p People) MaxScore() Score {
+	maxFound := Score(0)
+	for _, s := range p {
+		m := s.MaxScore()
+		if m > maxFound {
+			maxFound = m
+		}
+	}
+	return maxFound
+}
+
 func (p People) ListConnections() string {
 	peopleStr := ""
-	spacer := ""
 	for _, r := range p {
-		peopleStr += spacer + r.ListConnections()
-		spacer = ", "
+		peopleStr += "\n" + r.ListConnections()
 	}
 	return "[" + peopleStr + "]"
 }
@@ -127,11 +146,18 @@ func (p *People) AddToAnotherRoomByName(name string, r People) error {
 	return nil
 }
 func (p People) EveryoneHereHasMet() {
-	for i, m := range p {
-		if i >= 0 {
-			m.AddToConnection(*p[0])
+	for i, _ := range p {
+		for j, m := range p {
+			if j > i {
+				m.AddToConnection(*p[i])
+			}
 		}
 	}
+}
+func (p People) RunMeeting(q People) {
+	room := p.GetPeopleByName(q.Names())
+	room.EveryoneHereHasMet()
+	//fmt.Println("RunMeeting: People", p, p.ListConnections(), "after", q)
 }
 func (p *People) AddPersonToMeeting(r *Person) {
 	for _, m := range *p {

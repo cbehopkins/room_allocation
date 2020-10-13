@@ -30,6 +30,15 @@ func NewPerson(name string, l int) *Person {
 	p.Connections = make([]Connection, 0, l)
 	return p
 }
+func (p Person) MaxScore() Score {
+	maxScore := Score(0)
+	for _, c := range p.Connections {
+		if c.Count > maxScore {
+			maxScore = c.Count
+		}
+	}
+	return maxScore
+}
 
 func (p Person) ListConnections() string {
 	retStr := ""

@@ -19,12 +19,12 @@ func TestSelectOptimumOverlap0(t *testing.T) {
 }
 
 func tSelectOptimumOverlap(samplePeople People, t *testing.T, numberPeopleToSelect int) {
-	remainingPool := samplePeople.Copy()
+	remainingPool := samplePeople.CopyBlank()
 	meetingRoom := People{}
 	meetingRoom.AddBestNPeople(&remainingPool, numberPeopleToSelect)
 	t.Log("MR:", meetingRoom, "Remaining", remainingPool)
 	t.Log("*********Resetting for round 2!")
-	remainingPool = samplePeople.Copy()
+	remainingPool = samplePeople.CopyBlank()
 	meetingRoom = People{}
 	meetingRoom.AddBestNPeople(&remainingPool, numberPeopleToSelect-1)
 	t.Log("MR:", meetingRoom, "Remaining", remainingPool)

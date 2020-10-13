@@ -8,7 +8,7 @@ import (
 func TestMeeting0(t *testing.T) {
 	// First of all declare some people
 	samplePeople := NewPeople([]string{"bob", "fred", "Lisa", "Steve", "James"})
-	samplePeople0 := samplePeople.Copy()
+	samplePeople0 := samplePeople.CopyBlank()
 	// Select the a person with the lowest score
 	minimumPerson := samplePeople0.MinConnectionPerson()
 	meetingRoom := People{minimumPerson}
@@ -25,7 +25,7 @@ func TestMeeting1(t *testing.T) {
 	// First of all declare some people
 	samplePeople := NewPeople([]string{"bob", "fred", "Lisa", "Steve", "James"})
 	meetingRoom := People{}
-	remainingPool := samplePeople.Copy()
+	remainingPool := samplePeople.CopyBlank()
 	err := meetingRoom.AddBestNPeople(&remainingPool, 3)
 	if err != nil {
 		t.Error("Adding people failed:", err)
@@ -141,9 +141,9 @@ func TestMeetingOptimal(t *testing.T) {
 	testData := []MeetingTestData{
 		MeetingTestData{NewPeople([]string{"a", "b", "c", "d"}), 2, 1, 1, 2},
 		MeetingTestData{NewPeople([]string{"a", "b", "c", "d"}), 2, 2, 2, 2},
-		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"}), 2, 1, 1, 3},
+		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"}), 2, 1, 1, 4},
 		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"}), 3, 1, 1, 3},
-		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"}), 3, 2, 2, 5},
+		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"}), 3, 2, 2, 7},
 		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"}), 4, 1, 1, 3},
 		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h",
 			"i", "j", "k", "l", "m", "n", "p", "q"}), 3, 1, 1, 8},
@@ -161,7 +161,7 @@ func tMeetingOptimal(td MeetingTestData, cnt int, t *testing.T) {
 	targetConnections := td.targetConnections
 	minConnections := Score(td.minConnections)
 	maxConnections := Score(td.maxConnections)
-	roomsSchedule, err := samplePeople.OptimalMeet(numberRooms, targetConnections, 20)
+	roomsSchedule, err := samplePeople.OptimalMeet(numberRooms, targetConnections, 200)
 	if err != nil {
 		t.Error(cnt, err)
 	}

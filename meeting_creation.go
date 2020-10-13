@@ -44,32 +44,69 @@ func (p People) AutoMeet(maxNumRooms, numberOfMeets int) (meetingRoomSeq [][]Peo
 	if maxNumRooms > (len(p) / 2) {
 		maxNumRooms = len(p) / 2
 	}
-	for i := 0; p.MinConnectionScore() < Score(numberOfMeets); i++ {
+	MaxItterations := 100
+	for i := 0; (p.MinConnectionScore() < Score(numberOfMeets)) && (i < MaxItterations); i++ {
+		//fmt.Println("AutoMeet:", i, p.MinConnectionScore(), numberOfMeets, p.ListConnections())
 		mRs, err := p.SplitIntoNRooms(maxNumRooms)
 		if err != nil {
 			return nil, err
 		}
+		//fmt.Println("Have some meetings:", mRs)
 		meetingRoomSeq = append(meetingRoomSeq, mRs)
 	}
 	return
 }
+
+type OptFunc func(People, [][]People) []int
+
 func (p People) OptimalMeet(maxNumRooms, numberOfMeets, itterations int) ([][]People, error) {
-	minLengthFound := MaxInt
+	optFunc := func(po People, ml [][]People) []int {
+		// Optimise first to have the fewest number of meetings to go to
+		numberOfMeetingsNeeded := len(ml)
+		// Second to have the minimum score
+		// i.e. being in meetings with the same person several times, ideally you are less peaky!
+		maxScore := int(po.MaxScore())
+		return []int{numberOfMeetingsNeeded, maxScore}
+	}
+	return p.meetOptimiser(maxNumRooms, numberOfMeets, itterations, optFunc)
+}
+func (p People) RunMeetings(meetingSet [][]People) {
+	for _, session := range meetingSet {
+		for _, meeting := range session {
+			p.RunMeeting(meeting)
+		}
+	}
+}
+func (p People) meetOptimiser(maxNumRooms, numberOfMeets, itterations int, optFunc OptFunc) ([][]People, error) {
 	var meetingRoomSeq [][]People
+	minVal := []int{MaxInt, MaxInt} // FIXME
+	minimiser := func(tv []int, meetingRoomSeqTemp [][]People, po People) {
+		// fmt.Println("minimiser:::", po.ListConnections())
+		for j := 0; j < len(tv); j++ {
+			//fmt.Println("minimiser:::", tv, "j:", j, "minVal:", minVal, len(minVal))
+			if tv[j] < minVal[j] {
+				minVal = tv
+				meetingRoomSeq = meetingRoomSeqTemp
+				fmt.Println("Minval is now::", minVal)
+				return
+			}
+		}
+	}
+
 	for i := 0; i < itterations; i++ {
-		pc := p.Copy()
+		pc := p.CopyBlank()
 		meetingRoomSeqTemp, err := pc.AutoMeet(maxNumRooms, numberOfMeets)
 		if err != nil {
+			fmt.Println("Something went wrong!", err)
 			return nil, err
 		}
 		if len(meetingRoomSeqTemp) == 0 {
+			fmt.Println("Something went wrong with the length!")
 			continue
 		}
-		if len(meetingRoomSeqTemp) < minLengthFound {
-			minLengthFound = len(meetingRoomSeqTemp)
-			meetingRoomSeq = meetingRoomSeqTemp
-		}
-
+		tv := optFunc(pc, meetingRoomSeqTemp)
+		minimiser(tv, meetingRoomSeqTemp, pc)
 	}
+	p.RunMeetings(meetingRoomSeq)
 	return meetingRoomSeq, nil
 }
