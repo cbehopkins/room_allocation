@@ -1,89 +1,28 @@
 package room_allocation
 
 import (
-	"log"
+	"fmt"
+	"strconv"
 	"testing"
 )
 
-func TestMeeting0(t *testing.T) {
-	// First of all declare some people
-	samplePeople := NewPeople([]string{"bob", "fred", "Lisa", "Steve", "James"})
-	samplePeople0 := samplePeople.CopyBlank()
-	// Select the a person with the lowest score
-	minimumPerson := samplePeople0.MinConnectionPerson()
-	meetingRoom := People{minimumPerson}
-	remainingPool := samplePeople.NewRoomWithoutPerson(*minimumPerson)
-
-	err := meetingRoom.AddBestNPeople(&remainingPool, 1)
-	if err != nil {
-		t.Error("Adding people failed:", err)
+func generatePeopleList(cnt int) People {
+	retList := make([]string, cnt)
+	if cnt > 64 {
+		return nil
 	}
-	t.Log("We now have:", meetingRoom)
-
-}
-func TestMeeting1(t *testing.T) {
-	// First of all declare some people
-	samplePeople := NewPeople([]string{"bob", "fred", "Lisa", "Steve", "James"})
-	meetingRoom := People{}
-	remainingPool := samplePeople.CopyBlank()
-	err := meetingRoom.AddBestNPeople(&remainingPool, 3)
-	if err != nil {
-		t.Error("Adding people failed:", err)
-	}
-	t.Log("We now have:", meetingRoom)
-}
-func TestMeeting2(t *testing.T) {
-	// First of all declare some people
-	samplePeople := NewPeople([]string{"bob", "fred", "Lisa", "Steve", "James", "Lucy"})
-	for i := 0; i < 3; i++ {
-		mRs, err := samplePeople.SplitIntoNRooms(2)
-		if err != nil {
-			t.Error("Creating Meeting Rooms failed:", err)
+	for i := 0; i < cnt; i++ {
+		j := i
+		if i > 32 {
+			j -= 64
 		}
-		log.Println("MRs:", mRs, "Min Connections:", samplePeople.MinConnectionScore())
+		retList[i] = string('\u0041' + 32 + j)
 	}
-}
-func TestMeeting3(t *testing.T) {
-	// First of all declare some people
-	samplePeople := NewPeople([]string{"bob", "fred", "Lisa", "Steve"})
-	roomsSchedule, err := samplePeople.AutoMeet(2, 1)
-	if err != nil {
-		t.Error(t)
-	}
-
-	for i, rooms := range roomsSchedule {
-		t.Log("Session ", i, "Rooms:", rooms)
-	}
-}
-func TestMeeting4(t *testing.T) {
-	// First of all declare some people
-	samplePeople := NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"})
-	roomsSchedule, err := samplePeople.AutoMeet(2, 1)
-	if err != nil {
-		t.Error(t)
-	}
-
-	for i, rooms := range roomsSchedule {
-		t.Log("Session ", i, "Rooms:", rooms)
-	}
-	t.Log(samplePeople.ListConnections())
-}
-func TestMeeting5(t *testing.T) {
-	// First of all declare some people
-	samplePeople := NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"})
-	roomsSchedule, err := samplePeople.AutoMeet(4, 1)
-	if err != nil {
-		t.Error(t)
-	}
-
-	for i, rooms := range roomsSchedule {
-		t.Log("Session ", i, "Rooms:", rooms)
-	}
-	t.Log(samplePeople.ListConnections())
+	return NewPeople(retList)
 }
 
 type MeetingTestData struct {
-	p                 People
+	p                 int
 	numberRooms       int
 	targetConnections int
 	minConnections    int
@@ -93,16 +32,14 @@ type MeetingTestData struct {
 func TestMeetingAutoMeet(t *testing.T) {
 	// First of all declare some people
 	testData := []MeetingTestData{
-		MeetingTestData{NewPeople([]string{"a", "b", "c", "d"}), 2, 1, 1, 2},
-		MeetingTestData{NewPeople([]string{"a", "b", "c", "d"}), 2, 2, 2, 3},
-		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"}), 2, 1, 1, 5},
-		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"}), 3, 1, 1, 4},
-		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"}), 3, 2, 2, 5},
-		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"}), 4, 1, 1, 2},
-		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h",
-			"i", "j", "k", "l", "m", "n", "p", "q"}), 3, 1, 1, 9},
-		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h",
-			"i", "j", "k", "l", "m", "n", "p", "q"}), 4, 1, 1, 5},
+		MeetingTestData{4, 2, 1, 1, 0},
+		MeetingTestData{4, 2, 2, 2, 0},
+		MeetingTestData{8, 2, 1, 1, 0},
+		MeetingTestData{8, 3, 1, 1, 0},
+		MeetingTestData{8, 3, 2, 2, 0},
+		MeetingTestData{8, 4, 1, 1, 0},
+		MeetingTestData{16, 3, 1, 1, 0},
+		MeetingTestData{16, 4, 1, 1, 0},
 	}
 	for i, td := range testData {
 		tMeetingAutoMeet(td, i, t)
@@ -110,7 +47,7 @@ func TestMeetingAutoMeet(t *testing.T) {
 }
 
 func tMeetingAutoMeet(td MeetingTestData, cnt int, t *testing.T) {
-	samplePeople := td.p
+	samplePeople := generatePeopleList(td.p)
 	numberRooms := td.numberRooms
 	targetConnections := td.targetConnections
 	minConnections := Score(td.minConnections)
@@ -129,7 +66,7 @@ func tMeetingAutoMeet(td MeetingTestData, cnt int, t *testing.T) {
 			if connection.Count < minConnections {
 				t.Error(cnt, "We should have minimum", minConnections, " connection between ", person0, "and ", connection.PerLink, " have:", connection.Count)
 			}
-			if connection.Count > maxConnections {
+			if (maxConnections > 0) && (connection.Count > maxConnections) {
 				t.Error(cnt, "We should have maximum", maxConnections, " connection between ", person0, "and ", connection.PerLink, " have:", connection.Count)
 			}
 		}
@@ -139,24 +76,47 @@ func tMeetingAutoMeet(td MeetingTestData, cnt int, t *testing.T) {
 func TestMeetingOptimal(t *testing.T) {
 	// First of all declare some people
 	testData := []MeetingTestData{
-		MeetingTestData{NewPeople([]string{"a", "b", "c", "d"}), 2, 1, 1, 2},
-		MeetingTestData{NewPeople([]string{"a", "b", "c", "d"}), 2, 2, 2, 2},
-		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"}), 2, 1, 1, 4},
-		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"}), 3, 1, 1, 3},
-		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"}), 3, 2, 2, 7},
-		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h"}), 4, 1, 1, 3},
-		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h",
-			"i", "j", "k", "l", "m", "n", "p", "q"}), 3, 1, 1, 8},
-		MeetingTestData{NewPeople([]string{"a", "b", "c", "d", "e", "f", "g", "h",
-			"i", "j", "k", "l", "m", "n", "p", "q"}), 4, 1, 1, 6},
+		// {	p, numberRooms, targetConnections, minConnections, maxConnections}
+		MeetingTestData{4, 2, 1, 1, 2},
+		MeetingTestData{4, 2, 2, 2, 2},
+		MeetingTestData{8, 2, 1, 1, 4},
+		MeetingTestData{8, 3, 1, 1, 3},
+		MeetingTestData{8, 3, 2, 2, 3},
+		MeetingTestData{8, 4, 1, 1, 3},
+		MeetingTestData{16, 2, 1, 1, 7},
+		MeetingTestData{16, 3, 1, 1, 7},
+		MeetingTestData{16, 4, 1, 1, 3},
+		MeetingTestData{16, 5, 1, 1, 4}, //8
+		MeetingTestData{16, 6, 1, 1, 3},
+		MeetingTestData{16, 7, 1, 1, 3},
+		MeetingTestData{16, 8, 1, 1, 2},
 	}
 	for i, td := range testData {
-		tMeetingOptimal(td, i, t)
+		tMeetingOptimal(td, strconv.Itoa(i), t)
 	}
 }
-
-func tMeetingOptimal(td MeetingTestData, cnt int, t *testing.T) {
-	samplePeople := td.p
+func TestMeetingOptimalGen(t *testing.T) {
+	resultArray := make([]string, 0, 64)
+	for numPeople := 4; numPeople < 33; numPeople++ {
+		for numberRooms := 2; numberRooms < 8; numberRooms++ {
+			if numberRooms > (numPeople / 2) {
+				continue
+			}
+			for targetConnections := 1; targetConnections < 2; targetConnections++ {
+				minConnections := targetConnections
+				maxConnections := numPeople - 1
+				td := MeetingTestData{numPeople, numberRooms, targetConnections, minConnections, maxConnections}
+				lenRooms, maxCon := tMeetingOptimal(td, fmt.Sprint("numPeople:", numPeople, " numberRooms:", numberRooms, " targetConnections:", targetConnections), t)
+				resultArray = append(resultArray, fmt.Sprint("numPeople:", numPeople, " numberRooms:", numberRooms, " NumSessions:", lenRooms, " MaxRemeet:", maxCon))
+			}
+		}
+	}
+	for _, s := range resultArray {
+		t.Log(s)
+	}
+}
+func tMeetingOptimal(td MeetingTestData, cnt string, t *testing.T) (int, int) {
+	samplePeople := generatePeopleList(td.p)
 	numberRooms := td.numberRooms
 	targetConnections := td.targetConnections
 	minConnections := Score(td.minConnections)
@@ -173,14 +133,22 @@ func tMeetingOptimal(td MeetingTestData, cnt int, t *testing.T) {
 		t.Log("Session ", i, "Rooms:", rooms)
 	}
 	t.Log(samplePeople.ListConnections())
+	maxConn := 0
 	for _, person0 := range samplePeople {
 		for _, connection := range person0.Connections {
 			if connection.Count < minConnections {
 				t.Error(cnt, "We should have minimum", minConnections, " connection between ", person0, "and ", connection.PerLink, " have:", connection.Count)
+				return 0, 0
+
 			}
 			if connection.Count > maxConnections {
 				t.Error(cnt, "We should have maximum", maxConnections, " connection between ", person0, "and ", connection.PerLink, " have:", connection.Count)
+				return 0, 0
+			}
+			if int(connection.Count) > maxConn {
+				maxConn = int(connection.Count)
 			}
 		}
 	}
+	return len(roomsSchedule), maxConn
 }

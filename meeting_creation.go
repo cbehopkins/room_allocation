@@ -6,6 +6,12 @@ var NotEnoughPeopleError = fmt.Errorf("There are not enough people to split up i
 var NotEnoughRoomsError = fmt.Errorf("That os not enough rooms to make sense")
 var NotEnoughMeets = fmt.Errorf("Not enough meetings requested, need at least 1")
 
+func (p People) targetNumberOfPeoplePerRoom(numRooms int, roomsAllocated int) int {
+	initial := (len(p) + numRooms - 1) / numRooms
+	n := ((len(p) - (initial * roomsAllocated)) + numRooms - roomsAllocated - 1) / (numRooms - roomsAllocated)
+	return n
+}
+
 func (p People) SplitIntoNRooms(n int) (meetingRooms []People, err error) {
 	if len(p) < n {
 		return nil, NotEnoughPeopleError
@@ -23,13 +29,20 @@ func (p People) SplitIntoNRooms(n int) (meetingRooms []People, err error) {
 	remainingPool := p.Copy()
 
 	// Now let's get into the business logic!
-	targetNumberPeoplePerRoom := (len(p) + n - 1) / n
 	//fmt.Println("Targetting ", targetNumberPeoplePerRoom, "from", len(p))
 	for i := 0; i < n-1; i++ {
+		targetNumberPeoplePerRoom := p.targetNumberOfPeoplePerRoom(n, i)
+		if len(remainingPool) < 2 {
+			fmt.Println("We'll have a long person in the meeting room, bacause:", targetNumberPeoplePerRoom, len(p), p, n)
+		}
+		// Populate each room with the best people to go in them
 		err := meetingRooms[i].AddBestNPeople(&remainingPool, targetNumberPeoplePerRoom)
 		if err != nil {
 			return nil, err
 		}
+	}
+	if len(remainingPool) == 0 {
+		fmt.Println("************How TF did we get 0 people left? ")
 	}
 	// reuse remainingPool as the final meeting room
 	remainingPool.EveryoneHereHasMet()
@@ -87,7 +100,7 @@ func (p People) meetOptimiser(maxNumRooms, numberOfMeets, itterations int, optFu
 			if tv[j] < minVal[j] {
 				minVal = tv
 				meetingRoomSeq = meetingRoomSeqTemp
-				fmt.Println("Minval is now::", minVal)
+				//fmt.Println("Minval is now::", minVal)
 				return
 			}
 		}
