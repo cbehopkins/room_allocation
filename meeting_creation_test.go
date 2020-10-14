@@ -8,13 +8,13 @@ import (
 
 func generatePeopleList(cnt int) People {
 	retList := make([]string, cnt)
-	if cnt > 64 {
+	if cnt > 52 {
 		return nil
 	}
 	for i := 0; i < cnt; i++ {
 		j := i
-		if i > 32 {
-			j -= 64
+		if i > 25 {
+			j -= 58
 		}
 		retList[i] = string('\u0041' + 32 + j)
 	}
@@ -85,8 +85,8 @@ func TestMeetingOptimal(t *testing.T) {
 		MeetingTestData{8, 4, 1, 1, 3},
 		MeetingTestData{16, 2, 1, 1, 7},
 		MeetingTestData{16, 3, 1, 1, 7},
-		MeetingTestData{16, 4, 1, 1, 3},
-		MeetingTestData{16, 5, 1, 1, 4}, //8
+		MeetingTestData{16, 4, 1, 1, 4}, //8
+		MeetingTestData{16, 5, 1, 1, 4},
 		MeetingTestData{16, 6, 1, 1, 3},
 		MeetingTestData{16, 7, 1, 1, 3},
 		MeetingTestData{16, 8, 1, 1, 2},
@@ -128,11 +128,11 @@ func tMeetingOptimal(td MeetingTestData, cnt string, t *testing.T) (int, int) {
 	if roomsSchedule == nil {
 		t.Error("No room schedule retrurned")
 	}
-	t.Log("Results for tsetcase:", cnt)
-	for i, rooms := range roomsSchedule {
-		t.Log("Session ", i, "Rooms:", rooms)
-	}
-	t.Log(samplePeople.ListConnections())
+	//	t.Log("Results for tsetcase:", cnt)
+	//	for i, rooms := range roomsSchedule {
+	//		t.Log("Session ", i, "Rooms:", rooms)
+	//	}
+	// t.Log(samplePeople.ListConnections())
 	maxConn := 0
 	for _, person0 := range samplePeople {
 		for _, connection := range person0.Connections {

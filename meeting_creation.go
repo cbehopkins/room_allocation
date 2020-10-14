@@ -6,10 +6,12 @@ var NotEnoughPeopleError = fmt.Errorf("There are not enough people to split up i
 var NotEnoughRoomsError = fmt.Errorf("That os not enough rooms to make sense")
 var NotEnoughMeets = fmt.Errorf("Not enough meetings requested, need at least 1")
 
+func roundDownIntDivide(a, b int) int {
+	return (a + b - 1) / b
+}
 func (p People) targetNumberOfPeoplePerRoom(numRooms int, roomsAllocated int) int {
-	initial := (len(p) + numRooms - 1) / numRooms
-	n := ((len(p) - (initial * roomsAllocated)) + numRooms - roomsAllocated - 1) / (numRooms - roomsAllocated)
-	return n
+	initial := roundDownIntDivide(len(p), numRooms)
+	return roundDownIntDivide(len(p)-(initial*roomsAllocated), numRooms-roomsAllocated)
 }
 
 func (p People) SplitIntoNRooms(n int) (meetingRooms []People, err error) {
@@ -41,12 +43,8 @@ func (p People) SplitIntoNRooms(n int) (meetingRooms []People, err error) {
 			return nil, err
 		}
 	}
-	if len(remainingPool) == 0 {
-		fmt.Println("************How TF did we get 0 people left? ")
-	}
 	// reuse remainingPool as the final meeting room
-	remainingPool.EveryoneHereHasMet()
-	meetingRooms[n-1] = remainingPool
+	meetingRooms[n-1] = remainingPool.EveryoneHereHasMet()
 	return meetingRooms, nil
 }
 
@@ -93,17 +91,13 @@ func (p People) RunMeetings(meetingSet [][]People) {
 func (p People) meetOptimiser(maxNumRooms, numberOfMeets, itterations int, optFunc OptFunc) ([][]People, error) {
 	var meetingRoomSeq [][]People
 	minVal := []int{MaxInt, MaxInt} // FIXME
-	minimiser := func(tv []int, meetingRoomSeqTemp [][]People, po People) {
-		// fmt.Println("minimiser:::", po.ListConnections())
+	minimiser := func(tv []int) bool {
 		for j := 0; j < len(tv); j++ {
-			//fmt.Println("minimiser:::", tv, "j:", j, "minVal:", minVal, len(minVal))
 			if tv[j] < minVal[j] {
-				minVal = tv
-				meetingRoomSeq = meetingRoomSeqTemp
-				//fmt.Println("Minval is now::", minVal)
-				return
+				return true
 			}
 		}
+		return false
 	}
 
 	for i := 0; i < itterations; i++ {
@@ -118,7 +112,10 @@ func (p People) meetOptimiser(maxNumRooms, numberOfMeets, itterations int, optFu
 			continue
 		}
 		tv := optFunc(pc, meetingRoomSeqTemp)
-		minimiser(tv, meetingRoomSeqTemp, pc)
+		if minimiser(tv) {
+			minVal = tv
+			meetingRoomSeq = meetingRoomSeqTemp
+		}
 	}
 	p.RunMeetings(meetingRoomSeq)
 	return meetingRoomSeq, nil

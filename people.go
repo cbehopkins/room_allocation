@@ -145,7 +145,7 @@ func (p *People) AddToAnotherRoomByName(name string, r People) error {
 	*p = append(*p, r[i])
 	return nil
 }
-func (p People) EveryoneHereHasMet() {
+func (p People) EveryoneHereHasMet() People {
 	for i, _ := range p {
 		for j, m := range p {
 			if j > i {
@@ -153,11 +153,11 @@ func (p People) EveryoneHereHasMet() {
 			}
 		}
 	}
+	return p
 }
 func (p People) RunMeeting(q People) {
 	room := p.GetPeopleByName(q.Names())
 	room.EveryoneHereHasMet()
-	//fmt.Println("RunMeeting: People", p, p.ListConnections(), "after", q)
 }
 func (p *People) AddPersonToMeeting(r *Person) {
 	for _, m := range *p {
