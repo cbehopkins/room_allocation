@@ -12,13 +12,9 @@ var NoneSuitableFoundError = fmt.Errorf("No suitable people found")
 // I.e. The people who have had the least connections
 // between the two groups
 func (p People) SelectOptimumOverlap(externalPeople People) People {
-	//fmt.Println("SelectOptimumOverlap get in::", p, " and ", externalPeople)
 	// For each person in the external group
 	// What's the minimum connection score with internal group
 	minimumScore := p.generateMinimumsScoreboard(externalPeople)
-	//	for i, person := range p {
-	//		fmt.Println("Person:", person, " has score ", minimumScore[i])
-	//	}
 	resultScoreboard := make([]People, len(p))
 	for i, m := range p {
 		// Collect a list of people who have this minimum score
@@ -26,7 +22,6 @@ func (p People) SelectOptimumOverlap(externalPeople People) People {
 		// And the list is the people who have that score
 		resultScoreboard[i] = externalPeople.GetPeopleWithScore(*m, minimumScore.MinValue())
 	}
-	// fmt.Println("SelectOptimumOverlap:::", resultScoreboard, minimumScore, externalPeople)
 	return p.determineScoreboardOverlap(resultScoreboard, minimumScore.MinValue())
 }
 func (p People) determineScoreboardOverlap(resultScoreboard []People, minScore Score) People {
@@ -92,23 +87,22 @@ func (p *People) AddBestNPeople(sourceRoom *People, n int) error {
 }
 
 func (p *People) addUpToNBestPeople(sourceRoom *People, n int) (error, int) {
+	if len(*sourceRoom) == 0 {
+		return EmptyRoomError, 0
+	}
 	adj := 0
 	if len(*p) == 0 {
-		if len(*sourceRoom) == 0 {
-			return EmptyRoomError, 0
-		}
 
 		minimumPerson := sourceRoom.MinConnectionPerson()
 		p.AddPersonToMeeting(minimumPerson)
 		sourceRoom.RemovePerson(minimumPerson)
-		n -= 1
-		adj = 1
 		//fmt.Println("Selected minimum Person", minimumPerson)
 		if len(*sourceRoom) == 0 {
 			// shourtcut things when there was only 1 to add
 			return nil, 1
 		}
-
+		n -= 1
+		adj = 1
 	}
 	overlapGroup := p.SelectOptimumOverlap(*sourceRoom)
 	if len(overlapGroup) == 0 {

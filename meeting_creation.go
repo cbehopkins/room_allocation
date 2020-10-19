@@ -1,10 +1,36 @@
 package room_allocation
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 var NotEnoughPeopleError = fmt.Errorf("There are not enough people to split up into that many rooms")
 var NotEnoughRoomsError = fmt.Errorf("That os not enough rooms to make sense")
 var NotEnoughMeets = fmt.Errorf("Not enough meetings requested, need at least 1")
+
+type MeetingSet []People
+type MeetingSchedule []MeetingSet
+
+func (m MeetingSet) String() string {
+	retStr := ""
+	spacerT := "    "
+	spacer := spacerT
+	for i, set := range m {
+		retStr += spacer + "    " + strconv.Itoa(i) + ":" + set.String()
+		spacer = "\n" + spacerT
+	}
+	return retStr
+}
+
+func (m MeetingSchedule) String() string {
+	retStr := ""
+	for i, schedule := range m {
+		retStr += "Session:" + strconv.Itoa(i) + ":\n" + schedule.String() + "\n"
+
+	}
+	return retStr + "\n"
+}
 
 func roundDownIntDivide(a, b int) int {
 	return (a + b - 1) / b
@@ -14,7 +40,7 @@ func (p People) targetNumberOfPeoplePerRoom(numRooms int, roomsAllocated int) in
 	return roundDownIntDivide(len(p)-(initial*roomsAllocated), numRooms-roomsAllocated)
 }
 
-func (p People) SplitIntoNRooms(n int) (meetingRooms []People, err error) {
+func (p People) SplitIntoNRooms(n int) (meetingRooms MeetingSet, err error) {
 	if len(p) < n {
 		return nil, NotEnoughPeopleError
 	}
@@ -48,7 +74,7 @@ func (p People) SplitIntoNRooms(n int) (meetingRooms []People, err error) {
 	return meetingRooms, nil
 }
 
-func (p People) AutoMeet(maxNumRooms, numberOfMeets int) (meetingRoomSeq [][]People, err error) {
+func (p People) AutoMeet(maxNumRooms, numberOfMeets int) (meetingRoomSeq MeetingSchedule, err error) {
 	if numberOfMeets < 1 {
 		return nil, NotEnoughMeets
 	}
@@ -68,10 +94,10 @@ func (p People) AutoMeet(maxNumRooms, numberOfMeets int) (meetingRoomSeq [][]Peo
 	return
 }
 
-type OptFunc func(People, [][]People) []int
+type OptFunc func(People, MeetingSchedule) []int
 
-func (p People) OptimalMeet(maxNumRooms, numberOfMeets, itterations int) ([][]People, error) {
-	optFunc := func(po People, ml [][]People) []int {
+func (p People) OptimalMeet(maxNumRooms, numberOfMeets, itterations int) (MeetingSchedule, error) {
+	optFunc := func(po People, ml MeetingSchedule) []int {
 		// Optimise first to have the fewest number of meetings to go to
 		numberOfMeetingsNeeded := len(ml)
 		// Second to have the minimum score
@@ -81,15 +107,15 @@ func (p People) OptimalMeet(maxNumRooms, numberOfMeets, itterations int) ([][]Pe
 	}
 	return p.meetOptimiser(maxNumRooms, numberOfMeets, itterations, optFunc)
 }
-func (p People) RunMeetings(meetingSet [][]People) {
-	for _, session := range meetingSet {
+func (p People) RunMeetings(meetingSchedule MeetingSchedule) {
+	for _, session := range meetingSchedule {
 		for _, meeting := range session {
 			p.RunMeeting(meeting)
 		}
 	}
 }
-func (p People) meetOptimiser(maxNumRooms, numberOfMeets, itterations int, optFunc OptFunc) ([][]People, error) {
-	var meetingRoomSeq [][]People
+func (p People) meetOptimiser(maxNumRooms, numberOfMeets, itterations int, optFunc OptFunc) (MeetingSchedule, error) {
+	var meetingRoomSeq MeetingSchedule
 	minVal := []int{MaxInt, MaxInt} // FIXME
 	minimiser := func(tv []int) bool {
 		for j := 0; j < len(tv); j++ {

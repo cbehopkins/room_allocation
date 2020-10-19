@@ -88,7 +88,7 @@ func TestMeetingOptimal(t *testing.T) {
 		MeetingTestData{16, 4, 1, 1, 4}, //8
 		MeetingTestData{16, 5, 1, 1, 4},
 		MeetingTestData{16, 6, 1, 1, 3},
-		MeetingTestData{16, 7, 1, 1, 3},
+		MeetingTestData{16, 7, 1, 1, 5},
 		MeetingTestData{16, 8, 1, 1, 2},
 	}
 	for i, td := range testData {

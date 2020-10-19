@@ -27,6 +27,15 @@ func NewPeople(l []string) People {
 	}
 	return p
 }
+func (p People) String() string {
+	retStr := "["
+	spacer := ""
+	for _, name := range p.Names() {
+		retStr += spacer + name
+		spacer = ", "
+	}
+	return retStr + "]"
+}
 func (p People) Names() []string {
 	retStr := make([]string, len(p))
 	for i, q := range p {
