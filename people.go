@@ -120,7 +120,7 @@ func (p People) NewRoomWithoutPerson(person Person) People {
 func (p People) NewRoomWithoutName(name string) People {
 	// Note we do not modify the origional room because we will go back to that
 	// But basically we want to select everyone who isn't name
-	// into a new slicve
+	// into a new slice
 
 	// Locate the position of this person in the string
 	loc, _ := p.GetPersonByName(name)

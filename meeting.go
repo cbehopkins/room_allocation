@@ -2,11 +2,10 @@ package room_allocation
 
 import "strconv"
 
-type Meeting struct {People}
+type Meeting struct{ People }
 
 type MeetingSet []Meeting
 type MeetingSchedule []MeetingSet
-
 
 func (m MeetingSet) String() string {
 	retStr := ""
@@ -30,7 +29,7 @@ func (m MeetingSchedule) String() string {
 func (m MeetingSet) Len() int {
 	return len(m)
 }
-func (m MeetingSchedule) Len () int {
+func (m MeetingSchedule) Len() int {
 	return len(m)
 }
 func roundDownIntDivide(a, b int) int {

@@ -2,6 +2,8 @@ package room_allocation
 
 import (
 	"fmt"
+	"runtime"
+	"sync"
 )
 
 var NotEnoughPeopleError = fmt.Errorf("There are not enough people to split up into that many rooms")
@@ -11,7 +13,6 @@ var NotEnoughMeets = fmt.Errorf("Not enough meetings requested, need at least 1"
 func (p People) ToMeeting() Meeting {
 	return Meeting{p}
 }
-
 
 func (p Meeting) SplitIntoNRooms(n int) (meetingRooms MeetingSet, err error) {
 	if p.Len() < n {
@@ -84,38 +85,80 @@ func (p Meeting) RunMeetings(meetingSchedule MeetingSchedule) {
 	for _, session := range meetingSchedule {
 		for _, meeting := range session {
 			p.RunMeeting(meeting)
-			 }
+		}
 	}
 }
-func (p Meeting) meetOptimiser(maxNumRooms, numberOfMeets, itterations int, optFunc OptFunc) (MeetingSchedule, error) {
-	var meetingRoomSeq MeetingSchedule
-	minVal := []int{MaxInt, MaxInt} // FIXME
-	minimiser := func(tv []int) bool {
-		for j := 0; j < len(tv); j++ {
-			if tv[j] < minVal[j] {
-				return true
-			}
-		}
-		return false
-	}
 
-	for i := 0; i < itterations; i++ {
+type resultStruct struct {
+	p   Meeting
+	m   MeetingSchedule
+	err error
+}
+
+func (p Meeting) optimiserWorker(maxNumRooms, numberOfMeets int, wg *sync.WaitGroup, sourceChan <-chan Meeting, resultChan chan<- resultStruct) {
+	for p := range sourceChan {
 		pc := p.CopyBlank().ToMeeting()
 		meetingRoomSeqTemp, err := pc.AutoMeet(maxNumRooms, numberOfMeets)
+
 		if err != nil {
-			fmt.Println("Something went wrong!", err)
-			return nil, err
-		}
-		if len(meetingRoomSeqTemp) == 0 {
-			fmt.Println("Something went wrong with the length!")
+			resultChan <- resultStruct{pc, nil, err}
 			continue
 		}
-		tv := optFunc(pc, meetingRoomSeqTemp)
-		if minimiser(tv) {
-			minVal = tv
-			meetingRoomSeq = meetingRoomSeqTemp
-		}
+
+		resultChan <- resultStruct{pc, meetingRoomSeqTemp, nil}
 	}
+	wg.Done()
+}
+func (p Meeting) consolidateOptimisation(optFunc OptFunc, resultChan <-chan resultStruct) <-chan MeetingSchedule {
+	meetingScheduleChan := make(chan MeetingSchedule)
+	go func() {
+		defer close(meetingScheduleChan)
+		var meetingRoomSeq MeetingSchedule
+		minVal := []int{MaxInt, MaxInt} // FIXME
+		minimiser := func(tv []int) bool {
+			for j := 0; j < len(tv); j++ {
+				if tv[j] < minVal[j] {
+					return true
+				}
+			}
+			return false
+		}
+		for results := range resultChan {
+			if results.err != nil {
+				meetingScheduleChan <- nil
+				return
+			}
+			tv := optFunc(results.p, results.m)
+			if minimiser(tv) {
+				minVal = tv
+				meetingRoomSeq = results.m
+			}
+		}
+		meetingScheduleChan <- meetingRoomSeq
+
+	}()
+	return meetingScheduleChan
+}
+func (p Meeting) meetOptimiser(maxNumRooms, numberOfMeets, itterations int, optFunc OptFunc) (MeetingSchedule, error) {
+	sourceChan := make(chan Meeting)
+	resultChan := make(chan resultStruct)
+
+	var wg sync.WaitGroup
+	workerCount := runtime.NumCPU()
+	wg.Add(workerCount)
+	for i := 0; i < workerCount; i++ {
+		go p.optimiserWorker(maxNumRooms, numberOfMeets, &wg, sourceChan, resultChan)
+	}
+	go func() {
+		for i := 0; i < itterations; i++ {
+			sourceChan <- p
+		}
+		close(sourceChan)
+	}()
+	meetingScheduleChan := p.consolidateOptimisation(optFunc, resultChan)
+	wg.Wait()
+	close(resultChan)
+	meetingRoomSeq, _ := <-meetingScheduleChan
 	p.RunMeetings(meetingRoomSeq)
 	return meetingRoomSeq, nil
 }

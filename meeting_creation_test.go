@@ -128,11 +128,7 @@ func tMeetingOptimal(td MeetingTestData, cnt string, t *testing.T) (int, int) {
 	if roomsSchedule == nil {
 		t.Error("No room schedule retrurned")
 	}
-	//	t.Log("Results for tsetcase:", cnt)
-	//	for i, rooms := range roomsSchedule {
-	//		t.Log("Session ", i, "Rooms:", rooms)
-	//	}
-	// t.Log(samplePeople.ListConnections())
+
 	maxConn := 0
 	for _, person0 := range samplePeople {
 		for _, connection := range person0.Connections {
