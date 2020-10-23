@@ -10,7 +10,7 @@ import (
 
 func main() {
 	roomCntPtr := flag.Int("rooms", 2, "Number of rooms to use")
-	optCntPtr := flag.Int("opt", 8, "How many things to try")
+	optCntPtr := flag.Int("opt", 8, "How many things to try (2^opt)")
 	meetCnt := flag.Int("meets", 1, "What's the minimum number of times people should meet")
 	flag.Parse()
 	peopleList := flag.Args()

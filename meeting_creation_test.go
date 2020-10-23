@@ -52,7 +52,7 @@ func tMeetingAutoMeet(td MeetingTestData, cnt int, t *testing.T) {
 	targetConnections := td.targetConnections
 	minConnections := Score(td.minConnections)
 	maxConnections := Score(td.maxConnections)
-	roomsSchedule, err := samplePeople.AutoMeet(numberRooms, targetConnections)
+	roomsSchedule, err := samplePeople.ToMeeting().AutoMeet(numberRooms, targetConnections)
 	if err != nil {
 		t.Error(cnt, err)
 	}
@@ -121,7 +121,7 @@ func tMeetingOptimal(td MeetingTestData, cnt string, t *testing.T) (int, int) {
 	targetConnections := td.targetConnections
 	minConnections := Score(td.minConnections)
 	maxConnections := Score(td.maxConnections)
-	roomsSchedule, err := samplePeople.OptimalMeet(numberRooms, targetConnections, 200)
+	roomsSchedule, err := samplePeople.ToMeeting().OptimalMeet(numberRooms, targetConnections, 200)
 	if err != nil {
 		t.Error(cnt, err)
 	}

@@ -36,6 +36,9 @@ func (p People) String() string {
 	}
 	return retStr + "]"
 }
+func (p People) Len() int {
+	return len(p)
+}
 func (p People) Names() []string {
 	retStr := make([]string, len(p))
 	for i, q := range p {
@@ -164,7 +167,7 @@ func (p People) EveryoneHereHasMet() People {
 	}
 	return p
 }
-func (p People) RunMeeting(q People) {
+func (p People) RunMeeting(q Meeting) {
 	room := p.GetPeopleByName(q.Names())
 	room.EveryoneHereHasMet()
 }
