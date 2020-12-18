@@ -19,7 +19,7 @@ func main() {
 		os.Exit(1)
 	}
 	peeps := room_allocation.NewPeople(peopleList)
-	roomsSchedule, err := peeps.OptimalMeet(*roomCntPtr, *meetCnt, 1<<*optCntPtr)
+	roomsSchedule, err := peeps.ToMeeting().OptimalMeet(*roomCntPtr, *meetCnt, 1<<*optCntPtr)
 	if err != nil {
 		fmt.Println("Error!", err)
 		os.Exit(1)
