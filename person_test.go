@@ -351,3 +351,9 @@ func TestMinimumPeople0(t *testing.T) {
 	t.Log("We selected Lisa:", minimumPerson)
 
 }
+
+func TestJsonPeople(t *testing.T) {
+	samplePeople := NewPeople([]string{"bob", "fred", "Lisa"})
+	t.Log(samplePeople.Json())
+
+}

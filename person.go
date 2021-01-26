@@ -1,6 +1,7 @@
 package room_allocation
 
 import (
+	"encoding/json"
 	"errors"
 	"strconv"
 )
@@ -20,6 +21,15 @@ func (c Connection) Is(p Person) bool {
 type Person struct {
 	Name        string
 	Connections []Connection
+}
+
+func (c Connection) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Count   Score
+		PerLink string
+	}{
+		c.Count,
+		c.PerLink.Name})
 }
 
 type PersonNumber int

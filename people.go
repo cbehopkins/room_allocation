@@ -1,6 +1,9 @@
 package room_allocation
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 type Score int
 
@@ -36,6 +39,14 @@ func (p People) String() string {
 	}
 	return retStr + "]"
 }
+func (p People) Json() string {
+	b, err := json.Marshal(p)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+	return string(b)
+}
+
 func (p People) Len() int {
 	return len(p)
 }
