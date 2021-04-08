@@ -16,7 +16,7 @@ func generatePeopleList(cnt int) People {
 		if i > 25 {
 			j -= 58
 		}
-		retList[i] = string('\u0041' + 32 + j)
+		retList[i] = string(rune('\u0041' + 32 + j))
 	}
 	return NewPeople(retList)
 }
